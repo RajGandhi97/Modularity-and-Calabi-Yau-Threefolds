@@ -1,0 +1,2138 @@
+Inputs: Q - Calabi-Yaus.
+Outputs: Transf - vector consisting of matrices.
+Function: TranslationIntersection - this function takes as input a Calabi-Yau.
+TranslationOfSimplex is used to find automorphisms of P that fixes this 
+variety. The vector, Transf, consisting of the corresponding 
+transformation is returned.
+*/
+
+Translation := function(Q) 
+    
+    P<x,y,z,s,t> := ProjectiveSpace(Rationals(),4);
+    Q<x,y,z,s,t> := Evaluate(Q,<x,y,z,s,t>);
+    bool0,point0 := [1,1,1,1,1] in P;
+    bool1,point1 := [1,0,0,0,0] in P;
+    bool2,point2 := [0,1,0,0,0] in P;
+    bool3,point3 := [0,0,1,0,0] in P;
+    bool4,point4 := [0,0,0,1,0] in P;
+    bool5,point5 := [0,0,0,0,1] in P;
+    All_points := [point0,point1,point2,point3,point4,point5];
+
+    List_of_automorphisms := [];
+
+    for p1,p2,p3,p4,p5,p6 in All_points do
+        try
+            p := [p1,p2,p3,p4,p5,p6];
+            T := TranslationOfSimplex(P,p);
+            bool,T_inv := IsInvertible(T);
+            if (Evaluate(Q,<x,y,z,s,t>) eq Evaluate(Q,<T(x),T(y),T(z),T(s),T(t)>)) and (T^2 eq T_inv) then
+                Include(~List_of_automorphisms,T);
+            end if;
+        catch e1; 
+        end try;
+    end for;
+
+    Transf := AssociativeArray();
+    for i in [1..#List_of_automorphisms] do
+        T := Matrix(Rationals(),5,[0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0]);
+        f<x,y,z,s,t> := List_of_automorphisms[i](x);
+        T[1,1] := Evaluate(f,<1,0,0,0,0>);
+        T[2,1] := Evaluate(f,<0,1,0,0,0>);
+        T[3,1] := Evaluate(f,<0,0,1,0,0>);
+        T[4,1] := Evaluate(f,<0,0,0,1,0>);
+        T[5,1] := Evaluate(f,<0,0,0,0,1>);
+        f<x,y,z,s,t> := List_of_automorphisms[i](y);
+        T[1,2] := Evaluate(f,<1,0,0,0,0>);
+        T[2,2] := Evaluate(f,<0,1,0,0,0>);
+        T[3,2] := Evaluate(f,<0,0,1,0,0>);
+        T[4,2] := Evaluate(f,<0,0,0,1,0>);
+        T[5,2] := Evaluate(f,<0,0,0,0,1>);
+        f<x,y,z,s,t> := List_of_automorphisms[i](z);
+        T[1,3] := Evaluate(f,<1,0,0,0,0>);
+        T[2,3] := Evaluate(f,<0,1,0,0,0>);
+        T[3,3] := Evaluate(f,<0,0,1,0,0>);
+        T[4,3] := Evaluate(f,<0,0,0,1,0>);
+        T[5,3] := Evaluate(f,<0,0,0,0,1>);
+        f<x,y,z,s,t> := List_of_automorphisms[i](s);
+        T[1,4] := Evaluate(f,<1,0,0,0,0>);
+        T[2,4] := Evaluate(f,<0,1,0,0,0>);
+        T[3,4] := Evaluate(f,<0,0,1,0,0>);
+        T[4,4] := Evaluate(f,<0,0,0,1,0>);
+        T[5,4] := Evaluate(f,<0,0,0,0,1>);
+        f<x,y,z,s,t> := List_of_automorphisms[i](t);
+        T[1,5] := Evaluate(f,<1,0,0,0,0>);
+        T[2,5] := Evaluate(f,<0,1,0,0,0>);
+        T[3,5] := Evaluate(f,<0,0,1,0,0>);
+        T[4,5] := Evaluate(f,<0,0,0,1,0>);
+        T[5,5] := Evaluate(f,<0,0,0,0,1>);
+    Transf[i] := T;
+    end for;
+
+    for i in [1..#Transf] do
+        if Transf[i] eq Matrix(Rationals(),5,[1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,1,0, 0,0,0,0,1]) and i gt 1 then
+            O := Transf[i];
+            Transf[i] := Transf[1];
+            Transf[1] := O;
+        end if;
+    end for;
+
+    Transf := [Transf[i] : i in [1..#Transf]];
+   
+    return(Transf);
+
+end function;
+
+
+
+/*
+Inputs: f1,f2 - equations of varieties.
+        T1,T2 - automorphism of f1, resp. f2, of order 3.
+        min_prime_index - prime number.
+        max_prime index - prime number.
+Outputs: sum - vector of pairs [s,p], where s is the number of points in 
+ProductProjectiveSpace(GF(p^3),[2,1]) of quotient of f1/G x f2/G 
+by the automorphism T1 x T2, where p is a prime between min_prime_index and max_prime_index.
+Function: CountPoints - this function counts the number of points in 
+ProductProjectiveSpace(GF(p^3),[2,1]) on the quotient of the complete intersection of f and h
+by the automorphism T, where p is a prime between min_prime_index and max_prime_index.
+*/
+
+
+CountPoints := function(f1,f2,a,b,c,d,T1,T2,min_prime_index,max_prime_index)
+
+h1 := f1;
+h2 := f2;
+
+sum := [[0,NthPrime(i+1)] : i in [1..(max_prime_index-min_prime_index+1)]];
+
+for j in [min_prime_index..max_prime_index] do
+ 
+    p := NthPrime(j+1);
+    Proj := ProductProjectiveSpace(GF(p^3),[2,1]);
+    P<x,y,z,s,t> := PolynomialRing(GF(p^3),5);
+
+
+    tr,f1 := IsCoercible(P,h1);
+    tr,f2 := IsCoercible(P,h2);
+
+    
+    if T1 eq Matrix(Rationals(),5,[1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,1,0, 0,0,0,0,1]) and T2 eq Matrix(Rationals(),5,[1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,1,0, 0,0,0,0,1]) then
+        
+	subsum_s_nonzero := [0 : i in [0..p-1]];
+
+    /* s nonzero */
+    for q in [0..p-1] do
+        /*inverse of projection*/
+        Pr01 := {{[1,y1,z1,1,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f1,<1,y1,z1,1,t1>) eq 0) and (q eq t1)};
+        Pr01:=IndexedSet(Pr01);
+        Pr11 := {};
+        Pr11 := SetToIndexedSet(Pr11);
+        for i in [1..#Pr01] do 
+            conversion := SetToIndexedSet(Pr01[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Pr11,{p1});
+        end for;
+
+        Pr02 := {{[0,1,z1,1,t1]} : z1,t1 in GF(p) | (Evaluate(f1,<0,1,z1,1,t1>) eq 0) and (q eq t1)};
+        Pr02:=IndexedSet(Pr02);
+        Pr12 := {};
+        Pr12 := SetToIndexedSet(Pr12);
+        for i in [1..#Pr02] do
+            conversion := SetToIndexedSet(Pr02[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Pr12,{p1});
+        end for;
+
+        Pr03 := {{[0,0,1,1,t1]} : t1 in GF(p) | (Evaluate(f1,<0,0,1,1,t1>) eq 0) and (q eq t1)};
+        Pr03:=IndexedSet(Pr03);
+        Pr13 := {};
+        Pr13 := SetToIndexedSet(Pr13);
+        for i in [1..#Pr03] do
+            conversion := SetToIndexedSet(Pr03[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Pr13,{p1});
+        end for;
+
+
+        /*inverse of composition with automorphism*/
+        Au01 := {{[1,y1,z1,1,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f2,<1,y1,z1,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au01:=IndexedSet(Au01);
+        Au11 := {};
+        Au11 := SetToIndexedSet(Au11);
+        for i in [1..#Au01] do
+            conversion := SetToIndexedSet(Au01[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Au11,{p1});
+        end for;
+
+        Au02 := {{[0,1,z1,1,t1]} : z1,t1 in GF(p) | (Evaluate(f2,<0,1,z1,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au02:=IndexedSet(Au02);
+        Au12 := {};
+        Au12 := SetToIndexedSet(Au12);
+        for i in [1..#Au02] do
+            conversion := SetToIndexedSet(Au02[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Au12,{p1});
+        end for;
+
+        Au03 := {{[0,0,1,1,t1]} : t1 in GF(p) | (Evaluate(f2,<0,0,1,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au03:=IndexedSet(Au03);
+        Au13 := {};
+        Au13 := SetToIndexedSet(Au13);
+        for i in [1..#Au03] do
+            conversion := SetToIndexedSet(Au03[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Au13,{p1});
+        end for;
+  
+
+        subsum_s_nonzero[q+1] := (#Pr11+#Pr12+#Pr13)*(#Au11+#Au12+#Au13);
+    end for;
+    
+    /* s zero */
+
+        /*inverse of projection*/
+        SPr01 := {{[1,y1,z1,0,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f1,<1,y1,z1,0,t1>) eq 0) and (t1 ne 0)};
+        SPr01:=IndexedSet(SPr01);
+        SPr11 := {};
+        SPr11 := SetToIndexedSet(SPr11);
+        for i in [1..#SPr01] do
+            conversion := SetToIndexedSet(SPr01[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SPr11,{p1});
+        end for;
+
+        SPr02 := {{[0,1,z1,0,t1]} : z1,t1 in GF(p) | (Evaluate(f1,<0,1,z1,0,t1>) eq 0) and (t1 ne 0)};
+        SPr02:=IndexedSet(SPr02);
+        SPr12 := {};
+        SPr12 := SetToIndexedSet(SPr12);
+        for i in [1..#SPr02] do
+            conversion := SetToIndexedSet(SPr02[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SPr12,{p1});
+        end for;
+
+        SPr03 := {{[0,0,1,0,t1]} : t1 in GF(p) | (Evaluate(f1,<0,0,1,0,t1>) eq 0) and (t1 ne 0)};
+        SPr03:=IndexedSet(SPr03);
+        SPr13 := {};
+        SPr13 := SetToIndexedSet(SPr13);
+        for i in [1..#SPr03] do
+            conversion := SetToIndexedSet(SPr03[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SPr13,{p1});
+        end for;
+        
+         /*inverse of composition with automorphism*/
+        SAu01 := {{[1,y1,z1,0,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f2,<1,y1,z1,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu01:=IndexedSet(SAu01);
+        SAu11 := {};
+        SAu11 := SetToIndexedSet(SAu11);
+        for i in [1..#SAu01] do
+            conversion := SetToIndexedSet(SAu01[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SAu11,{p1});
+        end for;
+
+        SAu02 := {{[0,1,z1,0,t1]} : z1,t1 in GF(p) | (Evaluate(f2,<0,1,z1,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu02:=IndexedSet(SAu02);
+        SAu12 := {};
+        SAu12 := SetToIndexedSet(SAu12);
+        for i in [1..#SAu02] do
+            conversion := SetToIndexedSet(SAu02[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SAu12,{p1});
+        end for;
+
+        SAu03 := {{[0,0,1,0,t1]} : t1 in GF(p) | (Evaluate(f2,<0,0,1,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu03:=IndexedSet(SAu03);
+        SAu13 := {};
+        SAu13 := SetToIndexedSet(SAu13);
+        for i in [1..#SAu03] do
+            conversion := SetToIndexedSet(SAu03[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SAu13,{p1});
+        end for;
+
+        subsum_s_zero := (#SPr11+#SPr12+#SPr13)*(#SAu11+#SAu12+#SAu13);
+    /* end s zero*/
+
+    S := subsum_s_zero;
+    for q in [0..p-1] do
+        S := S + subsum_s_nonzero[q+1];
+    end for;
+    
+    sum[j] := [S,p];
+
+
+
+
+
+
+
+
+    elif T1 eq Matrix(Rationals(),5,[1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,1,0, 0,0,0,0,1]) and (T2 eq Matrix(Rationals(),5,[0,0,1,0,0, 1,0,0,0,0, 0,1,0,0,0, 0,0,0,1,0, 0,0,0,0,1]) or T2 eq Matrix(Rationals(),5,[0,1,0,0,0, 0,0,1,0,0, 1,0,0,0,0, 0,0,0,1,0, 0,0,0,0,1])) then
+        
+        subsum_s_nonzero := [0 : i in [0..p-1]];
+
+    /* s nonzero */
+    for q in [0..p-1] do
+        /*inverse of projection*/
+        /*rational points*/
+        Pr01 := {{[1,y1,z1,1,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f1,<1,y1,z1,1,t1>) eq 0) and (q eq t1)};
+        Pr01:=IndexedSet(Pr01);
+        Pr11 := {};
+        Pr11 := SetToIndexedSet(Pr11);
+        for i in [1..#Pr01] do 
+            conversion := SetToIndexedSet(Pr01[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Pr11,{p1});
+        end for;
+
+        Pr02 := {{[0,1,z1,1,t1]} : z1,t1 in GF(p) | (Evaluate(f1,<0,1,z1,1,t1>) eq 0) and (q eq t1)};
+        Pr02:=IndexedSet(Pr02);
+        Pr12 := {};
+        Pr12 := SetToIndexedSet(Pr12);
+        for i in [1..#Pr02] do
+            conversion := SetToIndexedSet(Pr02[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Pr12,{p1});
+        end for;
+
+        Pr03 := {{[0,0,1,1,t1]} : t1 in GF(p) | (Evaluate(f1,<0,0,1,1,t1>) eq 0) and (q eq t1)};
+        Pr03:=IndexedSet(Pr03);
+        Pr13 := {};
+        Pr13 := SetToIndexedSet(Pr13);
+        for i in [1..#Pr03] do
+            conversion := SetToIndexedSet(Pr03[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Pr13,{p1});
+        end for;
+
+        Pr21 := IndexedSetToSet(Pr11);
+        Pr22 := IndexedSetToSet(Pr12);
+        Pr23 := IndexedSetToSet(Pr13);
+
+
+        /*inverse of composition with automorphism*/
+        /*rational points*/
+        Au01 := {{[1,y1,z1,1,t1],[z1,1,y1,1,t1],[y1,z1,1,1,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f2,<1,y1,z1,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au01:=IndexedSet(Au01);
+        Au11 := {};
+        Au11 := SetToIndexedSet(Au11);
+        for i in [1..#Au01] do
+            conversion:=SetToIndexedSet(Au01[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Au11,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Au11,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Au11,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Au11,{p1,p2,p3});
+            end if;
+        end for; 
+
+        Au02 := {{[0,1,z1,1,t1],[z1,0,1,1,t1],[1,z1,0,1,t1]} : z1,t1 in GF(p) | (Evaluate(f2,<0,1,z1,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au02:=IndexedSet(Au02);
+        Au12 := {};
+        Au12 := SetToIndexedSet(Au12);
+        for i in [1..#Au02] do
+            conversion:=SetToIndexedSet(Au02[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Au12,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Au12,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Au12,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Au12,{p1,p2,p3});
+            end if;
+        end for; 
+
+
+        Au03 := {{[0,0,1,1,t1],[1,0,0,1,t1],[0,1,0,1,t1]} : t1 in GF(p) | (Evaluate(f2,<0,0,1,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au03:=IndexedSet(Au03);
+        Au13 := {};
+        Au13 := SetToIndexedSet(Au13);
+        for i in [1..#Au03] do
+            conversion:=SetToIndexedSet(Au03[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Au13,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Au13,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Au13,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Au13,{p1,p2,p3});
+            end if;
+        end for;
+ 
+        /*non-rational points*/      
+        Au04 := {{[x1,x1^(p^2),x1^p,1,t1],[x1^p,x1,x1^(p^2),1,t1],[x1^(p^2),x1^p,x1,1,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f2,<x1,x1^(p^2),x1^p,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au04:=IndexedSet(Au04);
+        Au14 := {};
+        Au14 := SetToIndexedSet(Au14);
+        for i in [1..#Au04] do
+            conversion:=SetToIndexedSet(Au04[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Au14,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Au14,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Au14,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Au14,{p1,p2,p3});
+            end if;
+        end for;
+
+        Au05 := {{[x1,x1^p,x1^(p^2),1,t1],[x1^(p^2),x1,x1^p,1,t1],[x1^p,x1^(p^2),x1,1,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f2,<x1,x1^p,x1^(p^2),1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au05:=IndexedSet(Au05);
+        Au15 := {};
+        Au15 := SetToIndexedSet(Au15);
+        for i in [1..#Au05] do
+            conversion:=SetToIndexedSet(Au05[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Au15,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Au15,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Au15,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Au15,{p1,p2,p3});
+            end if;
+        end for;
+
+        Au21 := IndexedSetToSet(Au11);
+        Au22 := IndexedSetToSet(Au12);
+        Au23 := IndexedSetToSet(Au13);
+        Au24 := IndexedSetToSet(Au14);
+        Au25 := IndexedSetToSet(Au15);
+
+        for x in Au22 do
+            if x in Au21 then
+                Exclude(~Au22,x);
+            end if;
+        end for;
+        for x in Au23 do
+            if x in Au21 then
+                Exclude(~Au23,x);
+            elif x in Au22 then
+                Exclude(~Au23,x);
+            end if;
+        end for;
+	for x in Au24 do
+            if x in Au21 then
+                Exclude(~Au24,x);
+            elif x in Au22 then
+                Exclude(~Au24,x);
+	    elif x in Au23 then
+		Exclude(~Au24,x);
+            end if;
+        end for;
+	for x in Au25 do
+            if x in Au21 then
+                Exclude(~Au25,x);
+            elif x in Au22 then
+                Exclude(~Au25,x);
+	    elif x in Au23 then
+		Exclude(~Au25,x);
+	    elif x in Au24 then
+		Exclude(~Au25,x);
+            end if;
+        end for;
+
+        subsum_s_nonzero[q+1] := (#Pr21+#Pr22+#Pr23)*(#Au21+#Au22+#Au23+#Au24+#Au25);
+    end for;
+    /*end s not equal 0*/
+    
+    /* s zero */
+        /*inverse of projection*/
+        /*rational points*/
+        SPr01 := {{[1,y1,z1,0,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f1,<1,y1,z1,0,t1>) eq 0) and (t1 ne 0)};
+        SPr01:=IndexedSet(SPr01);
+        SPr11 := {};
+        SPr11 := SetToIndexedSet(SPr11);
+        for i in [1..#SPr01] do
+            conversion := SetToIndexedSet(SPr01[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SPr11,{p1});
+        end for;
+
+        SPr02 := {{[0,1,z1,0,t1]} : z1,t1 in GF(p) | (Evaluate(f1,<0,1,z1,0,t1>) eq 0) and (t1 ne 0)};
+        SPr02:=IndexedSet(SPr02);
+        SPr12 := {};
+        SPr12 := SetToIndexedSet(SPr12);
+        for i in [1..#SPr02] do
+            conversion := SetToIndexedSet(SPr02[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SPr12,{p1});
+        end for;
+
+        SPr03 := {{[0,0,1,0,t1]} : t1 in GF(p) | (Evaluate(f1,<0,0,1,0,t1>) eq 0) and (t1 ne 0)};
+        SPr03:=IndexedSet(SPr03);
+        SPr13 := {};
+        SPr13 := SetToIndexedSet(SPr13);
+        for i in [1..#SPr03] do
+            conversion := SetToIndexedSet(SPr03[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SPr13,{p1});
+        end for;
+
+        SPr21 := IndexedSetToSet(SPr11);
+        SPr22 := IndexedSetToSet(SPr12);
+        SPr23 := IndexedSetToSet(SPr13);
+
+        
+        
+         /*inverse of composition with automorphism*/
+        /*rational points*/
+        SAu01 := {{[1,y1,z1,0,t1],[z1,1,y1,0,t1],[y1,z1,1,0,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f2,<1,y1,z1,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu01:=IndexedSet(SAu01);
+        SAu11 := {};
+        SAu11 := SetToIndexedSet(SAu11);
+        for i in [1..#SAu01] do
+            conversion:=SetToIndexedSet(SAu01[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SAu11,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SAu11,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SAu11,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SAu11,{p1,p2,p3});
+            end if;
+        end for; 
+
+        SAu02 := {{[0,1,z1,0,t1],[z1,0,1,0,t1],[1,z1,0,0,t1]} : z1,t1 in GF(p) | (Evaluate(f2,<0,1,z1,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu02:=IndexedSet(SAu02);
+        SAu12 := {};
+        SAu12 := SetToIndexedSet(SAu12);
+        for i in [1..#SAu02] do
+            conversion:=SetToIndexedSet(SAu02[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SAu12,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SAu12,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SAu12,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SAu12,{p1,p2,p3});
+            end if;
+        end for; 
+
+        SAu03 := {{[0,0,1,0,t1],[1,0,0,0,t1],[0,1,0,0,t1]} : t1 in GF(p) | (Evaluate(f2,<0,0,1,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu03:=IndexedSet(SAu03);
+        SAu13 := {};
+        SAu13 := SetToIndexedSet(SAu13);
+        for i in [1..#SAu03] do
+            conversion:=SetToIndexedSet(SAu03[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SAu13,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SAu13,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SAu13,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SAu13,{p1,p2,p3});
+            end if;
+        end for; 
+
+        /*non-rational points*/        
+        SAu04 := {{[x1,x1^(p^2),x1^p,0,t1],[x1^p,x1,x1^(p^2),0,t1],[x1^(p^2),x1^p,x1,0,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f2,<x1,x1^(p^2),x1^p,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu04:=IndexedSet(SAu04);
+        SAu14 := {};
+        SAu14 := SetToIndexedSet(SAu14);
+        for i in [1..#SAu04] do
+            conversion:=SetToIndexedSet(SAu04[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SAu14,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SAu14,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SAu14,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SAu14,{p1,p2,p3});
+            end if;
+        end for; 
+
+        SAu05 := {{[x1,x1^p,x1^(p^2),0,t1],[x1^(p^2),x1,x1^p,0,t1],[x1^p,x1^(p^2),x1,0,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f2,<x1,x1^p,x1^(p^2),0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu05:=IndexedSet(SAu05);
+        SAu15 := {};
+        SAu15 := SetToIndexedSet(SAu15);
+        for i in [1..#SAu05] do
+            conversion:=SetToIndexedSet(SAu05[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SAu15,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SAu15,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SAu15,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SAu15,{p1,p2,p3});
+            end if;
+        end for; 
+
+        SAu21 := IndexedSetToSet(SAu11);
+        SAu22 := IndexedSetToSet(SAu12);
+        SAu23 := IndexedSetToSet(SAu13);
+        SAu24 := IndexedSetToSet(SAu14);
+        SAu25 := IndexedSetToSet(SAu15);
+
+        for x in SAu22 do
+            if x in SAu21 then
+                Exclude(~SAu22,x);
+            end if;
+        end for;
+        for x in SAu23 do
+            if x in SAu21 then
+                Exclude(~SAu23,x);
+            elif x in SAu22 then
+                Exclude(~SAu23,x);
+            end if;
+        end for;
+	for x in SAu24 do
+            if x in SAu21 then
+                Exclude(~SAu24,x);
+            elif x in SAu22 then
+                Exclude(~SAu24,x);
+	    elif x in SAu23 then
+		Exclude(~SAu24,x);
+            end if;
+        end for;
+	for x in SAu25 do
+            if x in SAu21 then
+                Exclude(~SAu25,x);
+            elif x in SAu22 then
+                Exclude(~SAu25,x);
+	    elif x in SAu23 then
+		Exclude(~SAu25,x);
+	    elif x in SAu24 then
+		Exclude(~SAu25,x);
+            end if;
+        end for;
+
+
+        subsum_s_zero := (#SPr21+#SPr22+#SPr23)*(#SAu21+#SAu22+#SAu23+#SAu24+#SAu25);
+    /* end s zero*/
+
+    S := subsum_s_zero;
+    for q in [0..p-1] do
+        S := S + subsum_s_nonzero[q+1];
+    end for;
+    
+    sum[j] := [S,p];
+
+    elif (T1 eq Matrix(Rationals(),5,[0,1,0,0,0, 0,0,1,0,0, 1,0,0,0,0, 0,0,0,1,0, 0,0,0,0,1]) or T1 eq Matrix(Rationals(),5,[0,0,1,0,0, 1,0,0,0,0, 0,1,0,0,0, 0,0,0,1,0, 0,0,0,0,1])) and T2 eq Matrix(Rationals(),5,[1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,1,0, 0,0,0,0,1]) then
+        
+        subsum_s_nonzero := [0 : i in [0..p-1]];
+
+    /* s nonzero */
+    for q in [0..p-1] do
+        /*inverse of projection*/
+        /*rational points*/
+        Pr01 := {{[1,y1,z1,1,t1],[z1,1,y1,1,t1],[y1,z1,1,1,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f1,<1,y1,z1,1,t1>) eq 0) and (q eq t1)};
+        Pr01:=IndexedSet(Pr01);
+        Pr11 := {};
+        Pr11 := SetToIndexedSet(Pr11);
+        for i in [1..#Pr01] do
+            conversion:=SetToIndexedSet(Pr01[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Pr11,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Pr11,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Pr11,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Pr11,{p1,p2,p3});
+            end if;
+        end for; 
+
+
+        Pr02 := {{[0,1,z1,1,t1],[z1,0,1,1,t1],[1,z1,0,1,t1]} : z1,t1 in GF(p) | (Evaluate(f1,<0,1,z1,1,t1>) eq 0) and (q eq t1)};
+        Pr02:=IndexedSet(Pr02);
+        Pr12 := {};
+        Pr12 := SetToIndexedSet(Pr12);
+        for i in [1..#Pr02] do
+            conversion:=SetToIndexedSet(Pr02[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Pr12,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Pr12,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Pr12,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Pr12,{p1,p2,p3});
+            end if;        
+        end for; 
+
+        Pr03 := {{[0,0,1,1,t1],[1,0,0,1,t1],[0,1,0,1,t1]} : t1 in GF(p) | (Evaluate(f1,<0,0,1,1,t1>) eq 0) and (q eq t1)};
+        Pr03:=IndexedSet(Pr03);
+        Pr13 := {};
+        Pr13 := SetToIndexedSet(Pr13);
+        for i in [1..#Pr03] do
+            conversion:=SetToIndexedSet(Pr03[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Pr13,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Pr13,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Pr13,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Pr13,{p1,p2,p3});
+            end if;
+        end for; 
+
+        /*non-rational points*/     
+        Pr04 := {{[x1,x1^(p^2),x1^p,1,t1],[x1^p,x1,x1^(p^2),1,t1],[x1^(p^2),x1^p,x1,1,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f1,<x1,x1^(p^2),x1^p,1,t1>) eq 0) and (q eq t1)};
+        Pr04:=IndexedSet(Pr04);
+        Pr14 := {};
+        Pr14 := SetToIndexedSet(Pr14);
+        for i in [1..#Pr04] do
+            conversion:=SetToIndexedSet(Pr04[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Pr14,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Pr14,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Pr14,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Pr14,{p1,p2,p3});
+            end if;
+        end for;
+
+        Pr05 := {{[x1,x1^p,x1^(p^2),1,t1],[x1^(p^2),x1,x1^p,1,t1],[x1^p,x1^(p^2),x1,1,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f1,<x1,x1^p,x1^(p^2),1,t1>) eq 0) and (q eq t1)};
+        Pr05:=IndexedSet(Pr05);
+        Pr15 := {};
+        Pr15 := SetToIndexedSet(Pr15);
+        for i in [1..#Pr05] do
+            conversion:=SetToIndexedSet(Pr05[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Pr15,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Pr15,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Pr15,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Pr15,{p1,p2,p3});
+            end if;
+        end for;
+
+
+        Pr21 := IndexedSetToSet(Pr11);
+        Pr22 := IndexedSetToSet(Pr12);
+        Pr23 := IndexedSetToSet(Pr13);
+        Pr24 := IndexedSetToSet(Pr14);
+        Pr25 := IndexedSetToSet(Pr15);
+
+
+        for x in Pr22 do
+            if x in Pr21 then
+                Exclude(~Pr22,x);
+            end if;
+        end for;
+        for x in Pr23 do
+            if x in Pr21 then
+                Exclude(~Pr23,x);
+            elif x in Pr22 then
+                Exclude(~Pr23,x);
+            end if;
+        end for;
+	for x in Pr24 do
+            if x in Pr21 then
+                Exclude(~Pr24,x);
+            elif x in Pr22 then
+                Exclude(~Pr24,x);
+	    elif x in Pr23 then
+		Exclude(~Pr24,x);
+            end if;
+        end for;
+	for x in Pr25 do
+            if x in Pr21 then
+                Exclude(~Pr25,x);
+            elif x in Pr22 then
+                Exclude(~Pr25,x);
+	    elif x in Pr23 then
+		Exclude(~Pr25,x);
+	    elif x in Pr24 then
+		Exclude(~Pr25,x);
+            end if;
+        end for;
+        
+
+        /*inverse of composition with automorphism*/
+        /*rational points*/
+        Au01 := {{[1,y1,z1,1,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f1,<1,y1,z1,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au01:=IndexedSet(Au01);
+        Au11 := {};
+        Au11 := SetToIndexedSet(Au11);
+        for i in [1..#Au01] do
+            conversion := SetToIndexedSet(Au01[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Au11,{p1});
+        end for;
+
+        Au02 := {{[0,1,z1,1,t1]} : z1,t1 in GF(p) | (Evaluate(f1,<0,1,z1,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au02:=IndexedSet(Au02);
+        Au12 := {};
+        Au12 := SetToIndexedSet(Au12);
+        for i in [1..#Au02] do
+            conversion := SetToIndexedSet(Au02[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Au12,{p1});
+        end for;
+
+        Au03 := {{[0,0,1,1,t1]} : t1 in GF(p) | (Evaluate(f1,<0,0,1,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au03:=IndexedSet(Au03);
+        Au13 := {};
+        Au13 := SetToIndexedSet(Au13);
+        for i in [1..#Au03] do
+            conversion := SetToIndexedSet(Au03[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Au13,{p1});
+        end for;
+
+        Au21 := IndexedSetToSet(Au11);
+        Au22 := IndexedSetToSet(Au12);
+        Au23 := IndexedSetToSet(Au13);
+        
+        subsum_s_nonzero[q+1] := (#Pr21+#Pr22+#Pr23+#Pr24+#Pr25)*(#Au21+#Au22+#Au23);
+    end for;
+    /*end s not equal 0*/
+    
+    /* s zero */
+        /*inverse of projection*/
+        /*rational points*/
+        SPr01 := {{[1,y1,z1,0,t1],[z1,1,y1,0,t1],[y1,z1,1,0,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f1,<1,y1,z1,0,t1>) eq 0) and (t1 ne 0)};
+        SPr01:=IndexedSet(SPr01);
+        SPr11 := {};
+        SPr11 := SetToIndexedSet(SPr11);
+        for i in [1..#SPr01] do
+            conversion:=SetToIndexedSet(SPr01[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SPr11,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SPr11,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SPr11,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SPr11,{p1,p2,p3});
+            end if;
+        end for; 
+
+
+        SPr02 := {{[0,1,z1,0,t1],[z1,0,1,0,t1],[1,z1,0,0,t1]} : z1,t1 in GF(p) | (Evaluate(f1,<0,1,z1,0,t1>) eq 0) and (t1 ne 0)};
+        SPr02:=IndexedSet(SPr02);
+        SPr12 := {};
+        SPr12 := SetToIndexedSet(SPr12);
+        for i in [1..#SPr02] do
+            conversion:=SetToIndexedSet(SPr02[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SPr12,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SPr12,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SPr12,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SPr12,{p1,p2,p3});
+            end if;
+        end for; 
+
+        SPr03 := {{[0,0,1,0,t1],[1,0,0,0,t1],[0,1,0,0,t1]} : t1 in GF(p) | (Evaluate(f1,<0,0,1,0,t1>) eq 0) and (t1 ne 0)};
+        SPr03:=IndexedSet(SPr03);
+        SPr13 := {};
+        SPr13 := SetToIndexedSet(SPr13);
+        for i in [1..#SPr03] do
+            conversion:=SetToIndexedSet(SPr03[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SPr13,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SPr13,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SPr13,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SPr13,{p1,p2,p3});
+            end if;
+        end for; 
+       
+        /*non-rational points*/         
+        SPr04 := {{[x1,x1^(p^2),x1^p,0,t1],[x1^p,x1,x1^(p^2),0,t1],[x1^(p^2),x1^p,x1,0,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f1,<x1,x1^(p^2),x1^p,0,t1>) eq 0) and (t1 ne 0)};
+        SPr04:=IndexedSet(SPr04);
+        SPr14 := {};
+        SPr14 := SetToIndexedSet(SPr14);
+        for i in [1..#SPr04] do
+            conversion:=SetToIndexedSet(SPr04[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SPr14,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SPr14,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SPr14,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SPr14,{p1,p2,p3});
+            end if;
+        end for;
+
+        SPr05 := {{[x1,x1^p,x1^(p^2),0,t1],[x1^(p^2),x1,x1^p,0,t1],[x1^p,x1^(p^2),x1,0,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f1,<x1,x1^p,x1^(p^2),0,t1>) eq 0) and (t1 ne 0)};
+        SPr05:=IndexedSet(SPr05);
+        SPr15 := {};
+        SPr15 := SetToIndexedSet(SPr15);
+        for i in [1..#SPr05] do
+            conversion:=SetToIndexedSet(SPr05[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SPr15,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SPr15,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SPr15,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SPr15,{p1,p2,p3});
+            end if;
+        end for;
+
+        SPr21 := IndexedSetToSet(SPr11);
+        SPr22 := IndexedSetToSet(SPr12);
+        SPr23 := IndexedSetToSet(SPr13);
+        SPr24 := IndexedSetToSet(SPr14);
+        SPr25 := IndexedSetToSet(SPr15);
+
+        for x in SPr22 do
+            if x in SPr21 then
+                Exclude(~SPr22,x);
+            end if;
+        end for;
+        for x in SPr23 do
+            if x in SPr21 then
+                Exclude(~SPr23,x);
+            elif x in SPr22 then
+                Exclude(~SPr23,x);
+            end if;
+        end for;
+	for x in SPr24 do
+            if x in SPr21 then
+                Exclude(~SPr24,x);
+            elif x in SPr22 then
+                Exclude(~SPr24,x);
+	    elif x in SPr23 then
+		Exclude(~SPr24,x);
+            end if;
+        end for;
+	for x in SPr25 do
+            if x in SPr21 then
+                Exclude(~SPr25,x);
+            elif x in SPr22 then
+                Exclude(~SPr25,x);
+	    elif x in SPr23 then
+		Exclude(~SPr25,x);
+	    elif x in SPr24 then
+		Exclude(~SPr25,x);
+            end if;
+        end for;
+    
+        
+         /*inverse of composition with automorphism*/
+        /*rational points*/
+        SAu01 := {{[1,y1,z1,0,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f1,<1,y1,z1,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu01:=IndexedSet(SAu01);
+        SAu11 := {};
+        SAu11 := SetToIndexedSet(SAu11);
+        for i in [1..#SAu01] do
+            conversion := SetToIndexedSet(SAu01[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SAu11,{p1});
+        end for;
+
+        SAu02 := {{[0,1,z1,0,t1]} : z1,t1 in GF(p) | (Evaluate(f1,<0,1,z1,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu02:=IndexedSet(SAu02);
+        SAu12 := {};
+        SAu12 := SetToIndexedSet(SAu12);
+        for i in [1..#SAu02] do
+            conversion := SetToIndexedSet(SAu02[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SAu12,{p1});
+        end for;
+
+        SAu03 := {{[0,0,1,0,t1]} : t1 in GF(p) | (Evaluate(f1,<0,0,1,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu03:=IndexedSet(SAu03);
+        SAu13 := {};
+        SAu13 := SetToIndexedSet(SAu13);
+        for i in [1..#SAu03] do
+            conversion := SetToIndexedSet(SAu03[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SAu13,{p1});
+        end for;
+
+        SAu21 := IndexedSetToSet(SAu11);
+        SAu22 := IndexedSetToSet(SAu12);
+        SAu23 := IndexedSetToSet(SAu13);
+
+        subsum_s_zero := (#SPr21+#SPr22+#SPr23+#SPr24+#SPr25)*(#SAu21+#SAu22+#SAu23);
+    /* end s zero*/
+
+    S := subsum_s_zero;
+    for q in [0..p-1] do
+        S := S + subsum_s_nonzero[q+1];
+    end for;
+    
+    sum[j] := [S,p];
+
+
+
+
+
+
+
+    elif (T1 eq Matrix(Rationals(),5,[0,0,1,0,0, 1,0,0,0,0, 0,1,0,0,0, 0,0,0,1,0, 0,0,0,0,1]) or T1 eq Matrix(Rationals(),5,[0,1,0,0,0, 0,0,1,0,0, 1,0,0,0,0, 0,0,0,1,0, 0,0,0,0,1]))  and (T2 eq Matrix(Rationals(),5,[0,0,1,0,0, 1,0,0,0,0, 0,1,0,0,0, 0,0,0,1,0, 0,0,0,0,1]) or T2 eq Matrix(Rationals(),5,[0,1,0,0,0, 0,0,1,0,0, 1,0,0,0,0, 0,0,0,1,0, 0,0,0,0,1])) then
+
+        subsum_s_nonzero := [0 : i in [0..p-1]];
+
+    /* s nonzero */
+    for q in [0..p-1] do
+        /*inverse of projection*/
+        /*rational points*/
+        Pr01 := {{[1,y1,z1,1,t1],[z1,1,y1,1,t1],[y1,z1,1,1,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f1,<1,y1,z1,1,t1>) eq 0) and (q eq t1)};
+        Pr01:=IndexedSet(Pr01);
+        Pr11 := {};
+        Pr11 := SetToIndexedSet(Pr11);
+        for i in [1..#Pr01] do
+            conversion:=SetToIndexedSet(Pr01[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Pr11,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Pr11,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Pr11,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Pr11,{p1,p2,p3});
+            end if;
+        end for; 
+
+
+        Pr02 := {{[0,1,z1,1,t1],[z1,0,1,1,t1],[1,z1,0,1,t1]} : z1,t1 in GF(p) | (Evaluate(f1,<0,1,z1,1,t1>) eq 0) and (q eq t1)};
+        Pr02:=IndexedSet(Pr02);
+        Pr12 := {};
+        Pr12 := SetToIndexedSet(Pr12);
+        for i in [1..#Pr02] do
+            conversion:=SetToIndexedSet(Pr02[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Pr12,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Pr12,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Pr12,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Pr12,{p1,p2,p3});
+            end if;        
+        end for; 
+
+        Pr03 := {{[0,0,1,1,t1],[1,0,0,1,t1],[0,1,0,1,t1]} : t1 in GF(p) | (Evaluate(f1,<0,0,1,1,t1>) eq 0) and (q eq t1)};
+        Pr03:=IndexedSet(Pr03);
+        Pr13 := {};
+        Pr13 := SetToIndexedSet(Pr13);
+        for i in [1..#Pr03] do
+            conversion:=SetToIndexedSet(Pr03[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Pr13,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Pr13,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Pr13,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Pr13,{p1,p2,p3});
+            end if;
+        end for; 
+
+        /*non-rational points*/     
+        Pr04 := {{[x1,x1^(p^2),x1^p,1,t1],[x1^p,x1,x1^(p^2),1,t1],[x1^(p^2),x1^p,x1,1,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f1,<x1,x1^(p^2),x1^p,1,t1>) eq 0) and (q eq t1)};
+        Pr04:=IndexedSet(Pr04);
+        Pr14 := {};
+        Pr14 := SetToIndexedSet(Pr14);
+        for i in [1..#Pr04] do
+            conversion:=SetToIndexedSet(Pr04[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Pr14,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Pr14,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Pr14,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Pr14,{p1,p2,p3});
+            end if;
+        end for;
+
+        Pr05 := {{[x1,x1^p,x1^(p^2),1,t1],[x1^(p^2),x1,x1^p,1,t1],[x1^p,x1^(p^2),x1,1,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f1,<x1,x1^p,x1^(p^2),1,t1>) eq 0) and (q eq t1)};
+        Pr05:=IndexedSet(Pr05);
+        Pr15 := {};
+        Pr15 := SetToIndexedSet(Pr15);
+        for i in [1..#Pr05] do
+            conversion:=SetToIndexedSet(Pr05[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Pr15,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Pr15,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Pr15,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Pr15,{p1,p2,p3});
+            end if;
+        end for;
+
+
+        Pr21 := IndexedSetToSet(Pr11);
+        Pr22 := IndexedSetToSet(Pr12);
+        Pr23 := IndexedSetToSet(Pr13);
+        Pr24 := IndexedSetToSet(Pr14);
+        Pr25 := IndexedSetToSet(Pr15);
+
+
+        for x in Pr22 do
+            if x in Pr21 then
+                Exclude(~Pr22,x);
+            end if;
+        end for;
+        for x in Pr23 do
+            if x in Pr21 then
+                Exclude(~Pr23,x);
+            elif x in Pr22 then
+                Exclude(~Pr23,x);
+            end if;
+        end for;
+	for x in Pr24 do
+            if x in Pr21 then
+                Exclude(~Pr24,x);
+            elif x in Pr22 then
+                Exclude(~Pr24,x);
+	    elif x in Pr23 then
+		Exclude(~Pr24,x);
+            end if;
+        end for;
+	for x in Pr25 do
+            if x in Pr21 then
+                Exclude(~Pr25,x);
+            elif x in Pr22 then
+                Exclude(~Pr25,x);
+	    elif x in Pr23 then
+		Exclude(~Pr25,x);
+	    elif x in Pr24 then
+		Exclude(~Pr25,x);
+            end if;
+        end for;
+        
+
+        /*inverse of composition with automorphism*/
+        /*rational points*/
+        Au01 := {{[1,y1,z1,1,t1],[z1,1,y1,1,t1],[y1,z1,1,1,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f2,<1,y1,z1,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au01:=IndexedSet(Au01);
+        Au11 := {};
+        Au11 := SetToIndexedSet(Au11);
+        for i in [1..#Au01] do
+            conversion:=SetToIndexedSet(Au01[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Au11,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Au11,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Au11,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Au11,{p1,p2,p3});
+            end if;
+        end for; 
+
+        Au02 := {{[0,1,z1,1,t1],[z1,0,1,1,t1],[1,z1,0,1,t1]} : z1,t1 in GF(p) | (Evaluate(f2,<0,1,z1,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au02:=IndexedSet(Au02);
+        Au12 := {};
+        Au12 := SetToIndexedSet(Au12);
+        for i in [1..#Au02] do
+            conversion:=SetToIndexedSet(Au02[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Au12,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Au12,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Au12,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Au12,{p1,p2,p3});
+            end if;
+        end for; 
+
+
+        Au03 := {{[0,0,1,1,t1],[1,0,0,1,t1],[0,1,0,1,t1]} : t1 in GF(p) | (Evaluate(f2,<0,0,1,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au03:=IndexedSet(Au03);
+        Au13 := {};
+        Au13 := SetToIndexedSet(Au13);
+        for i in [1..#Au03] do
+            conversion:=SetToIndexedSet(Au03[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Au13,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Au13,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Au13,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Au13,{p1,p2,p3});
+            end if;
+        end for;
+ 
+        /*non-rational points*/      
+        Au04 := {{[x1,x1^(p^2),x1^p,1,t1],[x1^p,x1,x1^(p^2),1,t1],[x1^(p^2),x1^p,x1,1,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f2,<x1,x1^(p^2),x1^p,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au04:=IndexedSet(Au04);
+        Au14 := {};
+        Au14 := SetToIndexedSet(Au14);
+        for i in [1..#Au04] do
+            conversion:=SetToIndexedSet(Au04[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Au14,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Au14,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Au14,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Au14,{p1,p2,p3});
+            end if;
+        end for;
+
+        Au05 := {{[x1,x1^p,x1^(p^2),1,t1],[x1^(p^2),x1,x1^p,1,t1],[x1^p,x1^(p^2),x1,1,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f2,<x1,x1^p,x1^(p^2),1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au05:=IndexedSet(Au05);
+        Au15 := {};
+        Au15 := SetToIndexedSet(Au15);
+        for i in [1..#Au05] do
+            conversion:=SetToIndexedSet(Au05[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~Au15,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~Au15,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~Au15,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~Au15,{p1,p2,p3});
+            end if;
+        end for;
+
+        Au21 := IndexedSetToSet(Au11);
+        Au22 := IndexedSetToSet(Au12);
+        Au23 := IndexedSetToSet(Au13);
+        Au24 := IndexedSetToSet(Au14);
+        Au25 := IndexedSetToSet(Au15);
+
+        for x in Au22 do
+            if x in Au21 then
+                Exclude(~Au22,x);
+            end if;
+        end for;
+        for x in Au23 do
+            if x in Au21 then
+                Exclude(~Au23,x);
+            elif x in Au22 then
+                Exclude(~Au23,x);
+            end if;
+        end for;
+	for x in Au24 do
+            if x in Au21 then
+                Exclude(~Au24,x);
+            elif x in Au22 then
+                Exclude(~Au24,x);
+	    elif x in Au23 then
+		Exclude(~Au24,x);
+            end if;
+        end for;
+	for x in Au25 do
+            if x in Au21 then
+                Exclude(~Au25,x);
+            elif x in Au22 then
+                Exclude(~Au25,x);
+	    elif x in Au23 then
+		Exclude(~Au25,x);
+	    elif x in Au24 then
+		Exclude(~Au25,x);
+            end if;
+        end for;
+
+        subsum_s_nonzero[q+1] := (#Pr21+#Pr22+#Pr23+#Pr24+#Pr25)*(#Au21+#Au22+#Au23+#Au24+#Au25);
+    end for;
+    /*end s not equal 0*/
+    
+    /* s zero */
+        /*inverse of projection*/
+        /*rational points*/
+        SPr01 := {{[1,y1,z1,0,t1],[z1,1,y1,0,t1],[y1,z1,1,0,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f1,<1,y1,z1,0,t1>) eq 0) and (t1 ne 0)};
+        SPr01:=IndexedSet(SPr01);
+        SPr11 := {};
+        SPr11 := SetToIndexedSet(SPr11);
+        for i in [1..#SPr01] do
+            conversion:=SetToIndexedSet(SPr01[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SPr11,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SPr11,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SPr11,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SPr11,{p1,p2,p3});
+            end if;
+        end for; 
+
+
+        SPr02 := {{[0,1,z1,0,t1],[z1,0,1,0,t1],[1,z1,0,0,t1]} : z1,t1 in GF(p) | (Evaluate(f1,<0,1,z1,0,t1>) eq 0) and (t1 ne 0)};
+        SPr02:=IndexedSet(SPr02);
+        SPr12 := {};
+        SPr12 := SetToIndexedSet(SPr12);
+        for i in [1..#SPr02] do
+            conversion:=SetToIndexedSet(SPr02[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SPr12,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SPr12,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SPr12,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SPr12,{p1,p2,p3});
+            end if;
+        end for; 
+
+        SPr03 := {{[0,0,1,0,t1],[1,0,0,0,t1],[0,1,0,0,t1]} : t1 in GF(p) | (Evaluate(f1,<0,0,1,0,t1>) eq 0) and (t1 ne 0)};
+        SPr03:=IndexedSet(SPr03);
+        SPr13 := {};
+        SPr13 := SetToIndexedSet(SPr13);
+        for i in [1..#SPr03] do
+            conversion:=SetToIndexedSet(SPr03[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SPr13,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SPr13,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SPr13,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SPr13,{p1,p2,p3});
+            end if;
+        end for; 
+       
+        /*non-rational points*/         
+        SPr04 := {{[x1,x1^(p^2),x1^p,0,t1],[x1^p,x1,x1^(p^2),0,t1],[x1^(p^2),x1^p,x1,0,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f1,<x1,x1^(p^2),x1^p,0,t1>) eq 0) and (t1 ne 0)};
+        SPr04:=IndexedSet(SPr04);
+        SPr14 := {};
+        SPr14 := SetToIndexedSet(SPr14);
+        for i in [1..#SPr04] do
+            conversion:=SetToIndexedSet(SPr04[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SPr14,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SPr14,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SPr14,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SPr14,{p1,p2,p3});
+            end if;
+        end for;
+
+        SPr05 := {{[x1,x1^p,x1^(p^2),0,t1],[x1^(p^2),x1,x1^p,0,t1],[x1^p,x1^(p^2),x1,0,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f1,<x1,x1^p,x1^(p^2),0,t1>) eq 0) and (t1 ne 0)};
+        SPr05:=IndexedSet(SPr05);
+        SPr15 := {};
+        SPr15 := SetToIndexedSet(SPr15);
+        for i in [1..#SPr05] do
+            conversion:=SetToIndexedSet(SPr05[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SPr15,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SPr15,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SPr15,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SPr15,{p1,p2,p3});
+            end if;
+        end for;
+
+        SPr21 := IndexedSetToSet(SPr11);
+        SPr22 := IndexedSetToSet(SPr12);
+        SPr23 := IndexedSetToSet(SPr13);
+        SPr24 := IndexedSetToSet(SPr14);
+        SPr25 := IndexedSetToSet(SPr15);
+
+        for x in SPr22 do
+            if x in SPr21 then
+                Exclude(~SPr22,x);
+            end if;
+        end for;
+        for x in SPr23 do
+            if x in SPr21 then
+                Exclude(~SPr23,x);
+            elif x in SPr22 then
+                Exclude(~SPr23,x);
+            end if;
+        end for;
+	for x in SPr24 do
+            if x in SPr21 then
+                Exclude(~SPr24,x);
+            elif x in SPr22 then
+                Exclude(~SPr24,x);
+	    elif x in SPr23 then
+		Exclude(~SPr24,x);
+            end if;
+        end for;
+	for x in SPr25 do
+            if x in SPr21 then
+                Exclude(~SPr25,x);
+            elif x in SPr22 then
+                Exclude(~SPr25,x);
+	    elif x in SPr23 then
+		Exclude(~SPr25,x);
+	    elif x in SPr24 then
+		Exclude(~SPr25,x);
+            end if;
+        end for;
+    
+        
+         /*inverse of composition with automorphism*/
+        /*rational points*/
+        SAu01 := {{[1,y1,z1,0,t1],[z1,1,y1,0,t1],[y1,z1,1,0,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f2,<1,y1,z1,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu01:=IndexedSet(SAu01);
+        SAu11 := {};
+        SAu11 := SetToIndexedSet(SAu11);
+        for i in [1..#SAu01] do
+            conversion:=SetToIndexedSet(SAu01[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SAu11,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SAu11,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SAu11,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SAu11,{p1,p2,p3});
+            end if;
+        end for; 
+
+        SAu02 := {{[0,1,z1,0,t1],[z1,0,1,0,t1],[1,z1,0,0,t1]} : z1,t1 in GF(p) | (Evaluate(f2,<0,1,z1,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu02:=IndexedSet(SAu02);
+        SAu12 := {};
+        SAu12 := SetToIndexedSet(SAu12);
+        for i in [1..#SAu02] do
+            conversion:=SetToIndexedSet(SAu02[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SAu12,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SAu12,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SAu12,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SAu12,{p1,p2,p3});
+            end if;
+        end for; 
+
+        SAu03 := {{[0,0,1,0,t1],[1,0,0,0,t1],[0,1,0,0,t1]} : t1 in GF(p) | (Evaluate(f2,<0,0,1,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu03:=IndexedSet(SAu03);
+        SAu13 := {};
+        SAu13 := SetToIndexedSet(SAu13);
+        for i in [1..#SAu03] do
+            conversion:=SetToIndexedSet(SAu03[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SAu13,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SAu13,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SAu13,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SAu13,{p1,p2,p3});
+            end if;
+        end for; 
+
+        /*non-rational points*/        
+        SAu04 := {{[x1,x1^(p^2),x1^p,0,t1],[x1^p,x1,x1^(p^2),0,t1],[x1^(p^2),x1^p,x1,0,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f2,<x1,x1^(p^2),x1^p,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu04:=IndexedSet(SAu04);
+        SAu14 := {};
+        SAu14 := SetToIndexedSet(SAu14);
+        for i in [1..#SAu04] do
+            conversion:=SetToIndexedSet(SAu04[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SAu14,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SAu14,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SAu14,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SAu14,{p1,p2,p3});
+            end if;
+        end for; 
+
+        SAu05 := {{[x1,x1^p,x1^(p^2),0,t1],[x1^(p^2),x1,x1^p,0,t1],[x1^p,x1^(p^2),x1,0,t1]} : x1 in GF(p^3), t1 in GF(p) | x1 notin GF(p) and (Evaluate(f2,<x1,x1^p,x1^(p^2),0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu05:=IndexedSet(SAu05);
+        SAu15 := {};
+        SAu15 := SetToIndexedSet(SAu15);
+        for i in [1..#SAu05] do
+            conversion:=SetToIndexedSet(SAu05[i]);
+            if #conversion eq 1 then
+                bool1,p1 := conversion[1] in Proj;
+                Include(~SAu15,{p1});
+            elif #conversion eq 2 then
+		if conversion[1] ne conversion[2] then
+                	bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[2] in Proj;
+               		Include(~SAu15,{p1,p2});
+		else 
+			bool1,p1 := conversion[1] in Proj;
+               		bool2,p2 := conversion[3] in Proj;
+               		Include(~SAu15,{p1,p2});
+		end if;
+            elif #conversion eq 3 then
+                bool1,p1 := conversion[1] in Proj;
+                bool2,p2 := conversion[2] in Proj;
+                bool3,p3 := conversion[3] in Proj;
+                Include(~SAu15,{p1,p2,p3});
+            end if;
+        end for; 
+
+        SAu21 := IndexedSetToSet(SAu11);
+        SAu22 := IndexedSetToSet(SAu12);
+        SAu23 := IndexedSetToSet(SAu13);
+        SAu24 := IndexedSetToSet(SAu14);
+        SAu25 := IndexedSetToSet(SAu15);
+
+        for x in SAu22 do
+            if x in SAu21 then
+                Exclude(~SAu22,x);
+            end if;
+        end for;
+        for x in SAu23 do
+            if x in SAu21 then
+                Exclude(~SAu23,x);
+            elif x in SAu22 then
+                Exclude(~SAu23,x);
+            end if;
+        end for;
+	for x in SAu24 do
+            if x in SAu21 then
+                Exclude(~SAu24,x);
+            elif x in SAu22 then
+                Exclude(~SAu24,x);
+	    elif x in SAu23 then
+		Exclude(~SAu24,x);
+            end if;
+        end for;
+	for x in SAu25 do
+            if x in SAu21 then
+                Exclude(~SAu25,x);
+            elif x in SAu22 then
+                Exclude(~SAu25,x);
+	    elif x in SAu23 then
+		Exclude(~SAu25,x);
+	    elif x in SAu24 then
+		Exclude(~SAu25,x);
+            end if;
+        end for;
+
+
+        subsum_s_zero := (#SPr21+#SPr22+#SPr23+#SPr24+#SPr25)*(#SAu21+#SAu22+#SAu23+#SAu24+#SAu25);
+    /* end s zero*/
+
+    S := subsum_s_zero;
+    for q in [0..p-1] do
+        S := S + subsum_s_nonzero[q+1];
+    end for;
+    
+    sum[j] := [S,p];
+
+
+    end if;
+
+
+end for;
+
+
+return(sum);
+
+
+end function;
+
+
+/*
+Inputs: sum - vector of pairs [s,p], where s and p are integers.
+Outputs: sum - vector of pairs [s,p], where s and p are integers.
+Function: GoodPrimes - this function takes in a vector consisting of pairs of 
+integers, sum, and removes all pairs in sum whose first coordinate is 0. It
+then outputs the result.
+*/
+
+GoodPrimes := function(sum)
+    
+
+    for x in sum do
+        if x[1] eq 0 then
+		Exclude(~sum,x);
+        end if;
+    end for;
+
+    return(sum);
+end function;
+
+
+
+/*
+Inputs: good_sum - vector of pairs [s,p], where s and p are integers.
+        search_min - positive integer.
+        search_max - positive integer.
+Outputs: weight_4_level - vector triple [x,y,z], where x,y,z are integers.
+Function: FindWeight4Form - this function takes as input good_sum, a vector 
+of pairs of integers, [s,p]. For each weight 4 newform of levels between 
+search_min to search_max, the function compares the p-th coefficient of the 
+newform to the integer s corresponding to p in a pair [s,p] for each pair in 
+good_sum, and stops if all pairs agree with the coefficients. It either returns
+[0,0,0] if no weight 4 newforms check out in the search, or [x,y,z], where 
+ModularForms(Gamma0(x),4)[y,z] is the newform corresponding to good_sum.
+*/
+
+FindWeight4Form := function(good_sum,search_min,search_max)
+
+X:=[0 : i in [1..#good_sum]];
+weight_4_level := [0,0,0];
+weight_4_coeff := [[0,good_sum[i][2]] : i in [1..#good_sum]];
+for C in [search_min..search_max] do
+    M:=ModularForms(Gamma0(C),4);
+    N:=NumberOfNewformClasses(M);
+        if (N gt 0) then
+                    for i in [1..N] do
+                        L:=#Newforms(M)[i];
+                            for k in [1..L] do
+                                for j in [1..#good_sum] do
+				    p := good_sum[j][2];
+                                    if( IsCoercible(Integers(),Coefficient(Newform(M,i,k),p)) ) then 
+                                        bool,x:=IsCoercible(Integers(),Coefficient(Newform(M,i,k),p));
+                                            if (((1-x) mod p) eq (good_sum[j][1] mod p)) then
+                                                weight_4_coeff[j] := [x,p];
+                                                X[j] := 1;
+                                            end if;
+                                    end if;
+                               end for;
+                            if X eq [1 : i in [1..#good_sum]] then   
+				ii := i; kk := k;
+                                break;
+                            else
+                                weight_4_coeff := [[0,good_sum[i][2]] : i in [1..#good_sum]];
+                                X := [0 : i in [1..#good_sum]];;
+                            end if;
+                        end for;
+                    if X eq [1 : i in [1..#good_sum]] then
+                       break;
+                    end if;    
+                  end for;
+              if X eq [1 : i in [1..#good_sum]] then
+                    weight_4_level := [C,ii,kk];
+                    break;
+              else
+                    weight_4_coeff := [[0,good_sum[i][2]] : i in [1..#good_sum]];
+                    X := [0 : i in [1..#good_sum]];
+              end if;
+        end if;
+end for;
+
+return(weight_4_level);
+
+
+end function;
+
+
+
+
+/*
+Inputs: counts - vector of pairs [s,p], where s and p are integers.
+        weight4level - a triple of integers [x,y,z], where 
+                        ModularForms(Gamma0(x),4)[y,z] is a weight 4 newform.
+Outputs: s - vector of real numbers.
+Function: FirstCoefficient - this functions approximates the first coefficient
+for each pair in counts, and stores each approximation as a coordinate in s. It 
+returns s.
+*/
+
+
+FirstCoefficient := function(counts,weight4level)
+
+    nf := Newforms(CuspForms(weight4level[1],4))[weight4level[2],weight4level[3]];
+    Z := Integers();
+    s := [<Z!((x[1]+Coefficient(nf,x[2])-x[2]^3-1)/x[2]),x[2]> : x in counts];
+    
+    return(s);
+
+end function;
+
+
+
+/*
+Inputs: counts - vector of pairs [s,p], where s and p are integers.
+        weight4level - a triple of integers [x,y,z], where 
+                        ModularForms(Gamma0(x),4)[y,z] is a weight 4 newform.
+        first_coeff - integer.
+Outputs: <C,A> - vector, where C=[c1,c2,c3,c4,c5,c6] is the zero vector
+or the vector of coefficients in 
+[<c1+c2*LegendreSymbol(-1,x[2])+c3*LegendreSymbol(2,x[2])+c4*LegendreSymbol(-2,x[2])+c5*LegendreSymbol(3,x[2])+c6*LegendreSymbol(-3,x[2]),x[2]>],
+and A is a set of vectors of pairs <s,p>, where s and p are integers.
+Function: SecondCoefficient - this functions attempts to determine whether the 
+sets A (defined in the function) and C (also defined in the function) coincide.
+If not, C is the zero vector. It returns <C,A>.
+*/
+
+SecondCoefficient := function(counts,weight4level,first_coeff)
+
+    nf := Newforms(CuspForms(weight4level[1],4))[weight4level[2],weight4level[3]];
+    Z := Integers();
+    A := [<(x[1]+Coefficient(nf,x[2])-x[2]^3-first_coeff*(x[2]^2)-1)/x[2],x[2]> : x in counts | x[2] ne 3];
+    X :=0;
+    C := [0,0,0,0,0,0];
+    for a,b,c,d,e,f in [-3..3] do
+        X := [<a+b*LegendreSymbol(-1,x[2])+c*LegendreSymbol(2,x[2])+d*LegendreSymbol(-2,x[2])+e*LegendreSymbol(3,x[2])+f*LegendreSymbol(-3,x[2]),x[2]> : x in counts | x[2] ne 3];
+        if X eq A then
+            X := [<a+b*LegendreSymbol(-1,x[2])+c*LegendreSymbol(2,x[2])+d*LegendreSymbol(-2,x[2])+e*LegendreSymbol(3,x[2])+f*LegendreSymbol(-3,x[2]),x[2]> : x in counts | x[2] ne 3];
+            C := [a,b,c,d,e,f];
+            break;
+        end if;
+    end for;
+    
+    return(<C,A>);
+
+end function;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*MAIN*/
+/*****************************************************************************/
+/*Required input*/
+
+/*Polynomial ring, P:*/
+P<x,y,z,s,t> := PolynomialRing(Rationals(),5);
+/*Calabi-Yau:*/
+f1<x,y,z,s,t>:=s*(x+y)*(y+z)*(z+x)-x*y*z*t;
+f2<x,y,z,s,t>:=s*(x+y)*(y+z)*(z+x)-x*y*z*t;
+a := 0;
+b := 1;
+c := -1;
+d := -1;
+/*Transformation matrix, T1:*/
+for T1 in Translation(f1), T2 in Translation(f2) do
+    /*prime range, min_prime and max_prime:*/
+    min_prime := 1;
+    max_prime := 7;
+    /*newform level range, min_weight4 and max_weight4:*/
+    min_weight4 :=73;
+    max_weight4 :=73;
+    print "Transformation matrix of f1 is", T1;
+    print "Transformation matrix of f2 is", T2;
+    sum := CountPoints(f1,f2,a,b,c,d,T1,T2,min_prime,max_prime);
+    print "Point counts are", sum;
+    "";
+    good_sum := GoodPrimes(sum);
+    print "Good point counts are", good_sum;
+    "";
+    weight4level := FindWeight4Form(good_sum,min_weight4,max_weight4);
+    print "Level of weight 4 newform is", weight4level;
+    "";
+    if weight4level ne [0,0,0] then
+    	    first_coeff := FirstCoefficient(good_sum,weight4level);
+	    print "First coefficient can be obtained from: ", first_coeff;
+	    second := SecondCoefficient(good_sum,weight4level,2);
+        	print "Second coefficient is ", second;
+    else
+        	print "not modular";
+    end if;
+    print "";
+    print "";
+    print "---------------------------------------------------------";
+    print "";
+    print "";
+end for;
+

@@ -1,0 +1,353 @@
+Transformation matrix of f1 is
+[1 0 0 0 0]
+[0 1 0 0 0]
+[0 0 1 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Transformation matrix of f2 is
+[1 0 0 0 0]
+[0 1 0 0 0]
+[0 0 1 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Point counts are [
+    [ 157, 3 ],
+    [ 373, 5 ],
+    [ 961, 7 ],
+    [ 2293, 11 ],
+    [ 3457, 13 ]
+]
+
+Good point counts are [
+    [ 157, 3 ],
+    [ 373, 5 ],
+    [ 961, 7 ],
+    [ 2293, 11 ],
+    [ 3457, 13 ]
+]
+
+Level of weight 4 newform is [ 102, 2, 1 ]
+
+First coefficient can be obtained from:  [ <42, 3>, <47, 5>, <85, 7>, <83, 11>,
+<97, 13> ]
+Second coefficient is  <[ 0, 0, 0, 0, 0, 0 ], [ <32, 5>, <64, 7>, <50, 11>, <58,
+13> ]>
+
+
+---------------------------------------------------------
+
+
+Transformation matrix of f1 is
+[1 0 0 0 0]
+[0 1 0 0 0]
+[0 0 1 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Transformation matrix of f2 is
+[0 0 1 0 0]
+[1 0 0 0 0]
+[0 1 0 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Point counts are [
+    [ 121, 3 ],
+    [ 313, 5 ],
+    [ 793, 7 ],
+    [ 2161, 11 ],
+    [ 3145, 13 ]
+]
+
+Good point counts are [
+    [ 121, 3 ],
+    [ 313, 5 ],
+    [ 793, 7 ],
+    [ 2161, 11 ],
+    [ 3145, 13 ]
+]
+
+Level of weight 4 newform is [ 102, 2, 1 ]
+
+First coefficient can be obtained from:  [ <30, 3>, <35, 5>, <61, 7>, <71, 11>,
+<73, 13> ]
+Second coefficient is  <[ 0, 0, 0, 0, 0, 0 ], [ <20, 5>, <40, 7>, <38, 11>, <34,
+13> ]>
+
+
+---------------------------------------------------------
+
+
+Transformation matrix of f1 is
+[1 0 0 0 0]
+[0 1 0 0 0]
+[0 0 1 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Transformation matrix of f2 is
+[0 1 0 0 0]
+[0 0 1 0 0]
+[1 0 0 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Point counts are [
+    [ 121, 3 ],
+    [ 313, 5 ],
+    [ 793, 7 ],
+    [ 2161, 11 ],
+    [ 3145, 13 ]
+]
+
+Good point counts are [
+    [ 121, 3 ],
+    [ 313, 5 ],
+    [ 793, 7 ],
+    [ 2161, 11 ],
+    [ 3145, 13 ]
+]
+
+Level of weight 4 newform is [ 102, 2, 1 ]
+
+First coefficient can be obtained from:  [ <30, 3>, <35, 5>, <61, 7>, <71, 11>,
+<73, 13> ]
+Second coefficient is  <[ 0, 0, 0, 0, 0, 0 ], [ <20, 5>, <40, 7>, <38, 11>, <34,
+13> ]>
+
+
+---------------------------------------------------------
+
+
+Transformation matrix of f1 is
+[0 0 1 0 0]
+[1 0 0 0 0]
+[0 1 0 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Transformation matrix of f2 is
+[1 0 0 0 0]
+[0 1 0 0 0]
+[0 0 1 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Point counts are [
+    [ 121, 3 ],
+    [ 313, 5 ],
+    [ 793, 7 ],
+    [ 2161, 11 ],
+    [ 3145, 13 ]
+]
+
+Good point counts are [
+    [ 121, 3 ],
+    [ 313, 5 ],
+    [ 793, 7 ],
+    [ 2161, 11 ],
+    [ 3145, 13 ]
+]
+
+Level of weight 4 newform is [ 102, 2, 1 ]
+
+First coefficient can be obtained from:  [ <30, 3>, <35, 5>, <61, 7>, <71, 11>,
+<73, 13> ]
+Second coefficient is  <[ 0, 0, 0, 0, 0, 0 ], [ <20, 5>, <40, 7>, <38, 11>, <34,
+13> ]>
+
+
+---------------------------------------------------------
+
+
+Transformation matrix of f1 is
+[0 0 1 0 0]
+[1 0 0 0 0]
+[0 1 0 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Transformation matrix of f2 is
+[0 0 1 0 0]
+[1 0 0 0 0]
+[0 1 0 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Point counts are [
+    [ 85, 3 ],
+    [ 253, 5 ],
+    [ 625, 7 ],
+    [ 2029, 11 ],
+    [ 2833, 13 ]
+]
+
+Good point counts are [
+    [ 85, 3 ],
+    [ 253, 5 ],
+    [ 625, 7 ],
+    [ 2029, 11 ],
+    [ 2833, 13 ]
+]
+
+Level of weight 4 newform is [ 102, 2, 1 ]
+
+First coefficient can be obtained from:  [ <18, 3>, <23, 5>, <37, 7>, <59, 11>,
+<49, 13> ]
+Second coefficient is  <[ 0, 0, 0, 0, 0, 0 ], [ <8, 5>, <16, 7>, <26, 11>, <10,
+13> ]>
+
+
+---------------------------------------------------------
+
+
+Transformation matrix of f1 is
+[0 0 1 0 0]
+[1 0 0 0 0]
+[0 1 0 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Transformation matrix of f2 is
+[0 1 0 0 0]
+[0 0 1 0 0]
+[1 0 0 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Point counts are [
+    [ 85, 3 ],
+    [ 253, 5 ],
+    [ 625, 7 ],
+    [ 2029, 11 ],
+    [ 2833, 13 ]
+]
+
+Good point counts are [
+    [ 85, 3 ],
+    [ 253, 5 ],
+    [ 625, 7 ],
+    [ 2029, 11 ],
+    [ 2833, 13 ]
+]
+
+Level of weight 4 newform is [ 102, 2, 1 ]
+
+First coefficient can be obtained from:  [ <18, 3>, <23, 5>, <37, 7>, <59, 11>,
+<49, 13> ]
+Second coefficient is  <[ 0, 0, 0, 0, 0, 0 ], [ <8, 5>, <16, 7>, <26, 11>, <10,
+13> ]>
+
+
+---------------------------------------------------------
+
+
+Transformation matrix of f1 is
+[0 1 0 0 0]
+[0 0 1 0 0]
+[1 0 0 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Transformation matrix of f2 is
+[1 0 0 0 0]
+[0 1 0 0 0]
+[0 0 1 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Point counts are [
+    [ 121, 3 ],
+    [ 313, 5 ],
+    [ 793, 7 ],
+    [ 2161, 11 ],
+    [ 3145, 13 ]
+]
+
+Good point counts are [
+    [ 121, 3 ],
+    [ 313, 5 ],
+    [ 793, 7 ],
+    [ 2161, 11 ],
+    [ 3145, 13 ]
+]
+
+Level of weight 4 newform is [ 102, 2, 1 ]
+
+First coefficient can be obtained from:  [ <30, 3>, <35, 5>, <61, 7>, <71, 11>,
+<73, 13> ]
+Second coefficient is  <[ 0, 0, 0, 0, 0, 0 ], [ <20, 5>, <40, 7>, <38, 11>, <34,
+13> ]>
+
+
+---------------------------------------------------------
+
+
+Transformation matrix of f1 is
+[0 1 0 0 0]
+[0 0 1 0 0]
+[1 0 0 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Transformation matrix of f2 is
+[0 0 1 0 0]
+[1 0 0 0 0]
+[0 1 0 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Point counts are [
+    [ 85, 3 ],
+    [ 253, 5 ],
+    [ 625, 7 ],
+    [ 2029, 11 ],
+    [ 2833, 13 ]
+]
+
+Good point counts are [
+    [ 85, 3 ],
+    [ 253, 5 ],
+    [ 625, 7 ],
+    [ 2029, 11 ],
+    [ 2833, 13 ]
+]
+
+Level of weight 4 newform is [ 102, 2, 1 ]
+
+First coefficient can be obtained from:  [ <18, 3>, <23, 5>, <37, 7>, <59, 11>,
+<49, 13> ]
+Second coefficient is  <[ 0, 0, 0, 0, 0, 0 ], [ <8, 5>, <16, 7>, <26, 11>, <10,
+13> ]>
+
+
+---------------------------------------------------------
+
+
+Transformation matrix of f1 is
+[0 1 0 0 0]
+[0 0 1 0 0]
+[1 0 0 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Transformation matrix of f2 is
+[0 1 0 0 0]
+[0 0 1 0 0]
+[1 0 0 0 0]
+[0 0 0 1 0]
+[0 0 0 0 1]
+Point counts are [
+    [ 85, 3 ],
+    [ 253, 5 ],
+    [ 625, 7 ],
+    [ 2029, 11 ],
+    [ 2833, 13 ]
+]
+
+Good point counts are [
+    [ 85, 3 ],
+    [ 253, 5 ],
+    [ 625, 7 ],
+    [ 2029, 11 ],
+    [ 2833, 13 ]
+]
+
+Level of weight 4 newform is [ 102, 2, 1 ]
+
+First coefficient can be obtained from:  [ <18, 3>, <23, 5>, <37, 7>, <59, 11>,
+<49, 13> ]
+Second coefficient is  <[ 0, 0, 0, 0, 0, 0 ], [ <8, 5>, <16, 7>, <26, 11>, <10,
+13> ]>
+
+
+---------------------------------------------------------
+
+
+>
+>
