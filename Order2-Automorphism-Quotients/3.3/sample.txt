@@ -1,0 +1,115 @@
+sum := [[0,0] : i in [1..8]];
+
+for j in [1..#sum] do
+	if j ne 2 then
+	p := NthPrime(j+1);
+    	k:=GF(p^2);
+    	g := Generator(k);
+    	Proj := ProjectiveSpace(GF(p^2),[1,1,1,1,1]);
+    	P<x,y,z,s,t>:=PolynomialRing(GF(p),5);
+	g<x,y,z,s,t> := (x+(1/2)*s)*((y^4)-(y^2)*(2*(x^2)-2*x*s+(s^2))+(1/5)*(((x^2)+x*s-s^2)^2));
+	f<x,y,z,s,t> := Evaluate(g,<x,y,z,s,t>)-Evaluate(g,<z,t,x,s,y>);
+	
+	Seq01 := {[1,y1,z1,s1,t1] : y1,z1,s1,t1 in GF(p)|Evaluate(f,<1,y1,z1,s1,t1>) eq 0};
+        Seq01:=IndexedSet(Seq01);
+        Seq11 := {};
+        Seq11 := SetToIndexedSet(Seq11);
+        for i in [1..#Seq01] do
+            bool1,p1 := Seq01[i] in Proj;
+            Include(~Seq11,{p1});
+        end for; 
+
+        Seq02 := {[0,1,z1,s1,t1] : z1,s1,t1 in GF(p)|(Evaluate(f,<0,1,z1,s1,t1>) eq 0)};
+        Seq02:=IndexedSet(Seq02);
+        Seq12 := {};
+        Seq12 := SetToIndexedSet(Seq12);
+        for i in [1..#Seq02] do
+            bool1,p1 := Seq02[i] in Proj;
+            Include(~Seq12,{p1});
+        end for; 
+
+        Seq03 := {[0,0,1,s1,t1] : s1,t1 in GF(p)|(Evaluate(f,<0,0,1,s1,t1>) eq 0)};
+        Seq03:=IndexedSet(Seq03);
+        Seq13 := {};
+        Seq13 := SetToIndexedSet(Seq13);
+        for i in [1..#Seq03] do
+            bool1,p1 := Seq03[i] in Proj;
+            Include(~Seq13,{p1});
+        end for; 
+	
+	Seq04 := {[0,0,0,1,t1] : t1 in GF(p)|(Evaluate(f,<0,0,0,1,t1>) eq 0)};
+        Seq04:=IndexedSet(Seq04);
+        Seq14 := {};
+        Seq14 := SetToIndexedSet(Seq14);
+        for i in [1..#Seq04] do
+            bool1,p1 := Seq04[i] in Proj;
+            Include(~Seq14,{p1});
+        end for; 
+    
+ 
+        Seq15 := {};
+        if (Evaluate(f,<0,0,0,0,1>) eq 0) then
+            b1,p1 := [0,0,0,0,1] in Proj;
+            Seq15 := {p1};
+        end if;
+
+
+        sum[j] := [#Seq11+#Seq12+#Seq13+#Seq14+#Seq15,p];	
+	else 
+		p := NthPrime(j+1);
+		sum[j] := [0,p];
+	end if;
+end for;
+
+sum;
+
+Exclude(~sum,sum[2]);
+
+good_sum := sum;
+good_sum;
+
+X:=[0 : i in [1..#good_sum]];
+weight_4_level := [0,0,0];
+weight_4_coeff := [[0,good_sum[i][2]] : i in [1..#good_sum]];
+for C in [50] do
+    M:=ModularForms(Gamma0(C),4);
+    N:=NumberOfNewformClasses(M);
+        if (N gt 0) then
+                    for i in [1..N] do
+                        L:=#Newforms(M)[i];
+                            for k in [1..L] do
+                                for j in [1..#good_sum] do
+				    p := good_sum[j][2];
+                                    if( IsCoercible(Integers(),Coefficient(Newform(M,i,k),p)) ) then 
+                                        bool,x:=IsCoercible(Integers(),Coefficient(Newform(M,i,k),p));
+                                            if (((1-x) mod p) eq (good_sum[j][1] mod p)) then
+                                                weight_4_coeff[j] := [x,p];
+                                                X[j] := 1;
+                                            end if;
+                                    end if;
+                               end for;
+                            if X eq [1 : i in [1..#good_sum]] then   
+				ii := i; kk := k;
+                                break;
+                            else
+                                weight_4_coeff := [[0,good_sum[i][2]] : i in [1..#good_sum]];
+                                X := [0 : i in [1..#good_sum]];;
+                            end if;
+                        end for;
+                    if X eq [1 : i in [1..#good_sum]] then
+                       break;
+                    end if;    
+                  end for;
+              if X eq [1 : i in [1..#good_sum]] then
+                    weight_4_level := [C,ii,kk];
+                    break;
+              else
+                    weight_4_coeff := [[0,good_sum[i][2]] : i in [1..#good_sum]];
+                    X := [0 : i in [1..#good_sum]];
+              end if;
+        end if;
+end for;
+
+weight_4_level;
+
+
