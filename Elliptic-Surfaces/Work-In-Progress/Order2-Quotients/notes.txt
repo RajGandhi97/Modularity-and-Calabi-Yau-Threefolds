@@ -1,0 +1,24 @@
+p := 3;
+P<x,y,z,s,t> := PolynomialRing(GF(p^2),5);
+Proj := ProductProjectiveSpace(GF(p^2),[2,1]);
+f<x,y,z,t,s> := s*(x+y)*(y+z)*(z+x)-x*y*z*t;
+X := {};
+for x1,y1,z1 in GF(p^2) do 
+    if (Evaluate(f,<x1,y1,z1,1,2>) eq 0) and (x1 ne 0 or y1 ne 0 or z1 ne 0) then 
+        b1,pt := [x1,y1,z1,1,2] in Proj;
+        Include(~X,pt);
+    end if;
+end for;
+for x in X do
+    e := Eltseq(x);
+    if e[1] in GF(p) and e[2] in GF(p) and e[3] in GF(p) then
+        x;
+    end if;
+end for;
+"";
+for x in X do
+    e := Eltseq(x);
+    if e[1] ne 0 and (e[3]/e[1]) eq (e[2]/e[1])^p then
+        x;
+    end if;
+end for;

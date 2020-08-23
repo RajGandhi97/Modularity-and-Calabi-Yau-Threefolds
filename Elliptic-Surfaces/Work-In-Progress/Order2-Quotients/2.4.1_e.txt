@@ -1,0 +1,318 @@
+sum := [[0,0] : i in [1..7]];
+C1 := 73;
+for j in [1..#sum] do
+    p := NthPrime(j+1);
+    Proj := ProductProjectiveSpace(GF(p),[2,1]);
+    P<x,y,z,s,t> := PolynomialRing(GF(p),5);
+    f1<x,y,z,s,t> := s*(x+y)*(y+z)*(z+x)-x*y*z*t;
+    f2<x,y,z,s,t> := s*(x+y)*(y+z)*(z+x)-x*y*z*t;
+    a := 0;
+    b := 1;
+    c := -1;
+    d := -1;
+    subsum_s_nonzero := [0 : i in [0..p-1]];
+
+    /* s nonzero */
+    for q in [0..p-1] do
+        /*inverse of projection*/
+        Pr01 := {{[1,y1,z1,1,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f1,<1,y1,z1,1,t1>) eq 0) and (q eq t1)};
+        Pr01:=IndexedSet(Pr01);
+        Pr11 := {};
+        Pr11 := SetToIndexedSet(Pr11);
+        for i in [1..#Pr01] do 
+            conversion := SetToIndexedSet(Pr01[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Pr11,{p1});
+        end for;
+
+        Pr02 := {{[0,1,z1,1,t1]} : z1,t1 in GF(p) | (Evaluate(f1,<0,1,z1,1,t1>) eq 0) and (q eq t1)};
+        Pr02:=IndexedSet(Pr02);
+        Pr12 := {};
+        Pr12 := SetToIndexedSet(Pr12);
+        for i in [1..#Pr02] do
+            conversion := SetToIndexedSet(Pr02[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Pr12,{p1});
+        end for;
+
+        Pr03 := {{[0,0,1,1,t1]} : t1 in GF(p) | (Evaluate(f1,<0,0,1,1,t1>) eq 0) and (q eq t1)};
+        Pr03:=IndexedSet(Pr03);
+        Pr13 := {};
+        Pr13 := SetToIndexedSet(Pr13);
+        for i in [1..#Pr03] do
+            conversion := SetToIndexedSet(Pr03[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Pr13,{p1});
+        end for;
+
+      
+
+        /*inverse of composition with automorphism*/
+        Au01 := {{[1,y1,z1,1,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f2,<1,y1,z1,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au01:=IndexedSet(Au01);
+        Au11 := {};
+        Au11 := SetToIndexedSet(Au11);
+        for i in [1..#Au01] do
+            conversion := SetToIndexedSet(Au01[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Au11,{p1});
+        end for;
+
+        Au02 := {{[0,1,z1,1,t1]} : z1,t1 in GF(p) | (Evaluate(f2,<0,1,z1,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au02:=IndexedSet(Au02);
+        Au12 := {};
+        Au12 := SetToIndexedSet(Au12);
+        for i in [1..#Au02] do
+            conversion := SetToIndexedSet(Au02[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Au12,{p1});
+        end for;
+
+        Au03 := {{[0,0,1,1,t1]} : t1 in GF(p) | (Evaluate(f2,<0,0,1,1,t1>) eq 0) and ((a*t1+b) eq (c*t1+d)*q)};
+        Au03:=IndexedSet(Au03);
+        Au13 := {};
+        Au13 := SetToIndexedSet(Au13);
+        for i in [1..#Au03] do
+            conversion := SetToIndexedSet(Au03[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Au13,{p1});
+        end for;
+
+
+        Pr := SetToIndexedSet({});
+	Au := SetToIndexedSet({});
+
+	for x in Pr11 do
+	    Include(~Pr,x);
+	end for;
+	for x in Pr12 do
+	    Include(~Pr,x);
+	end for;
+	for x in Pr13 do
+	    Include(~Pr,x);
+	end for;
+	for x in Au11 do
+	    Include(~Au,x);
+	end for;
+	for x in Au12 do
+	    Include(~Au,x);
+	end for;
+	for x in Au13 do
+	    Include(~Au,x);
+	end for;
+
+        X := SetToIndexedSet({});
+        for pt1 in Pr do
+            elt1 := Eltseq(Representative(pt1));
+            b1,p1 := [elt1[1],elt1[2],elt1[3],elt1[4],elt1[5]] in Proj;
+            b2,p2 := [elt1[1],elt1[3],elt1[2],elt1[4],elt1[5]] in Proj;
+            for pt2 in Au do
+                elt2 := Eltseq(Representative(pt2));
+                c1,q1 := [elt2[1],elt2[2],elt2[3],elt2[4],elt2[5]] in Proj;
+                c2,q2 := [elt2[1],elt2[3],elt2[2],elt2[4],elt2[5]] in Proj;
+                Include(~X,{<p1,q1>,<p2,q2>});
+            end for;
+        end for;
+
+       subsum_s_nonzero[q+1] := #X;
+    end for;
+    
+    /* s zero */
+
+        /*inverse of projection*/
+        SPr01 := {{[1,y1,z1,0,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f1,<1,y1,z1,0,t1>) eq 0) and (t1 ne 0)};
+        SPr01:=IndexedSet(SPr01);
+        SPr11 := {};
+        SPr11 := SetToIndexedSet(SPr11);
+        for i in [1..#SPr01] do
+            conversion := SetToIndexedSet(SPr01[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SPr11,{p1});
+        end for;
+
+        SPr02 := {{[0,1,z1,0,t1]} : z1,t1 in GF(p) | (Evaluate(f1,<0,1,z1,0,t1>) eq 0) and (t1 ne 0)};
+        SPr02:=IndexedSet(SPr02);
+        SPr12 := {};
+        SPr12 := SetToIndexedSet(SPr12);
+        for i in [1..#SPr02] do
+            conversion := SetToIndexedSet(SPr02[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SPr12,{p1});
+        end for;
+
+        SPr03 := {{[0,0,1,0,t1]} : t1 in GF(p) | (Evaluate(f1,<0,0,1,0,t1>) eq 0) and (t1 ne 0)};
+        SPr03:=IndexedSet(SPr03);
+        SPr13 := {};
+        SPr13 := SetToIndexedSet(SPr13);
+        for i in [1..#SPr03] do
+            conversion := SetToIndexedSet(SPr03[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SPr13,{p1});
+        end for;
+        
+         /*inverse of composition with automorphism*/
+        SAu01 := {{[1,y1,z1,0,t1]} : y1,z1,t1 in GF(p) | (Evaluate(f2,<1,y1,z1,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu01:=IndexedSet(SAu01);
+        SAu11 := {};
+        SAu11 := SetToIndexedSet(SAu11);
+        for i in [1..#SAu01] do
+            conversion := SetToIndexedSet(SAu01[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SAu11,{p1});
+        end for;
+
+        SAu02 := {{[0,1,z1,0,t1]} : z1,t1 in GF(p) | (Evaluate(f2,<0,1,z1,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu02:=IndexedSet(SAu02);
+        SAu12 := {};
+        SAu12 := SetToIndexedSet(SAu12);
+        for i in [1..#SAu02] do
+            conversion := SetToIndexedSet(SAu02[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SAu12,{p1});
+        end for;
+
+        SAu03 := {{[0,0,1,0,t1]} : t1 in GF(p) | (Evaluate(f2,<0,0,1,0,t1>) eq 0) and (t1 ne 0) and ((a*t1+b*0) eq (c*t1+d*0))};
+        SAu03:=IndexedSet(SAu03);
+        SAu13 := {};
+        SAu13 := SetToIndexedSet(SAu13);
+        for i in [1..#SAu03] do
+            conversion := SetToIndexedSet(SAu03[i]);
+            bool1,p1 := conversion[1] in Proj;
+            Include(~SAu13,{p1});
+        end for;
+
+        SPr := SetToIndexedSet({});
+	SAu := SetToIndexedSet({});
+
+	for x in SPr11 do
+	    Include(~SPr,x);
+	end for;
+	for x in SPr12 do
+	    Include(~SPr,x);
+	end for;
+	for x in SPr13 do
+	    Include(~SPr,x);
+	end for;
+	for x in SAu11 do
+	    Include(~SAu,x);
+	end for;
+	for x in SAu12 do
+	    Include(~SAu,x);
+	end for;
+	for x in SAu13 do
+	    Include(~SAu,x);
+	end for;
+
+        X := SetToIndexedSet({});
+        for pt1 in SPr do
+            elt1 := Eltseq(Representative(pt1));
+            b1,p1 := [elt1[1],elt1[2],elt1[3],elt1[4],elt1[5]] in Proj;
+            b2,p2 := [elt1[1],elt1[3],elt1[2],elt1[4],elt1[5]] in Proj;
+            for pt2 in SAu do
+                elt2 := Eltseq(Representative(pt2));
+                c1,q1 := [elt2[1],elt2[2],elt2[3],elt2[4],elt2[5]] in Proj;
+                c2,q2 := [elt2[1],elt2[3],elt2[2],elt2[4],elt2[5]] in Proj;
+                Include(~X,{<p1,q1>,<p2,q2>});
+            end for;
+        end for;
+
+       subsum_s_zero := #X;
+    /* end s zero*/
+
+    S := subsum_s_zero;
+    for q in [0..p-1] do
+        S := S + subsum_s_nonzero[q+1];
+    end for;
+    
+    sum[j] := [S,p];
+end for; 
+
+print "Point counts: ", sum;
+"";
+
+
+X := [0 : i in [1..#sum]];
+weight_4_level := [0,0,0];
+weight_4_coeff := [[0,sum[i][2]] : i in [1..#sum]];
+for C in [C1] do
+    M:=ModularForms(Gamma0(C),4);
+    N:=NumberOfNewformClasses(M);
+        if (N gt 0) then
+                    for i in [1..N] do
+                        L:=#Newforms(M)[i];
+                            for k in [1..L] do
+                                for j in [1..#sum] do
+				    p := sum[j][2];
+                                    if( IsCoercible(Integers(),Coefficient(Newform(M,i,k),p)) ) then 
+                                        bool,x := IsCoercible(Integers(),Coefficient(Newform(M,i,k),p));
+                                            if (((1-x) mod p) eq (sum[j][1] mod p)) then
+                                                weight_4_coeff[j] := [x,p];
+                                                X[j] := 1;
+                                            end if;
+                                    end if;
+                               end for;
+                            if X eq [1 : i in [1..#sum]] then   
+				ii := i; kk := k;
+                                break;
+                            else
+                                weight_4_coeff := [[0,sum[i][2]] : i in [1..#sum]];
+                                X := [0 : i in [1..#sum]];;
+                            end if;
+                        end for;
+                    if X eq [1 : i in [1..#sum]] then
+                       break;
+                    end if;    
+                  end for;
+              if X eq [1 : i in [1..#sum]] then
+                    weight_4_level := [C,ii,kk];
+                    break;
+              else
+                    weight_4_coeff := [[0,sum[i][2]] : i in [1..#sum]];
+                    X := [0 : i in [1..#sum]];
+              end if;
+        end if;
+end for;
+print "";
+print "";
+
+print "Newform level:", weight_4_level;
+print "Newform coefficients:", weight_4_coeff;
+"";
+
+FirstCoefficient := function(counts,weight4level)
+
+    nf := Newforms(CuspForms(weight4level[1],4))[weight4level[2],weight4level[3]];
+    Z := Integers();
+    s := [<Z!((x[1]+Coefficient(nf,x[2])-x[2]^3-1)/x[2]),x[2]> : x in counts];
+    
+    return(s);
+
+end function;
+
+SecondCoefficient := function(counts,weight4level,first_coeff)
+
+    nf := Newforms(CuspForms(weight4level[1],4))[weight4level[2],weight4level[3]];
+    Z := Integers();
+    A := [<(x[1]+Coefficient(nf,x[2])-x[2]^3-first_coeff*(x[2]^2)-1)/x[2],x[2]> : x in counts | x[2] ne 3];
+    "Desired second coefficient:", A;
+    "";
+    X :=0;
+    C := [0,0,0,0,0,0];
+    for a,b,c,d,e,f in [-3..3] do
+        X := [<a+b*LegendreSymbol(-1,x[2])+c*LegendreSymbol(2,x[2])+d*LegendreSymbol(-2,x[2])+e*LegendreSymbol(3,x[2])+f*LegendreSymbol(-3,x[2]),x[2]> : x in counts | x[2] ne 3];
+        if X eq A then
+            X := [<a+b*LegendreSymbol(-1,x[2])+c*LegendreSymbol(2,x[2])+d*LegendreSymbol(-2,x[2])+e*LegendreSymbol(3,x[2])+f*LegendreSymbol(-3,x[2]),x[2]> : x in counts | x[2] ne 3];
+            C := [a,b,c,d,e,f];
+            break;
+        end if;
+    end for;
+    
+    return(<C,A>);
+
+end function;
+
+first_coeff := FirstCoefficient(sum,weight_4_level);
+print "First coefficient: ", first_coeff;
+"";
+print "Second coefficient:", SecondCoefficient(sum,weight_4_level,6);
+
