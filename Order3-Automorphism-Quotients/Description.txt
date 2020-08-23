@@ -2,4 +2,4 @@ Here we take quotients of various Calabi-Yau threefolds in Meyer's book by autom
 
 This is work in progress.
 
-There is one example in this folder - it can be modified to include all cases. See the folder Elliptic-Surfaces for such more examples.
+There is one example in this folder - it can be modified to include all cases. See the folder Elliptic-Surfaces for such examples.
