@@ -1,0 +1,1783 @@
+/*Inputs: Q - Calabi-Yaus.
+Outputs: Transf - vector consisting of matrices.
+Function: TranslationIntersection - this function takes as input a Calabi-Yau.
+TranslationOfSimplex is used to find automorphisms of P that fixes this 
+variety. The vector, Transf, consisting of the corresponding 
+transformation is returned.
+*/
+
+Translation := function(Q) 
+    
+    P<x,y,z,t> := ProjectiveSpace(Rationals(),3);
+    Q<x,y,z,t> := Evaluate(Q,<x,y,z,t>);
+    bool0,point0 := [1,1,1,1] in P;
+    bool1,point1 := [1,0,0,0] in P;
+    bool2,point2 := [0,1,0,0] in P;
+    bool3,point3 := [0,0,1,0] in P;
+    bool4,point4 := [0,0,0,1] in P;
+    All_points := [point0,point1,point2,point3,point4];
+
+    List_of_automorphisms := [];
+
+    for p1,p2,p3,p4,p5 in All_points do
+        try
+            p := [p1,p2,p3,p4,p5];
+            T := TranslationOfSimplex(P,p);
+            bool,T_inv := IsInvertible(T);
+            if (Evaluate(Q,<x,y,z,t>) eq Evaluate(Q,<T(x),T(y),T(z),T(t)>)) and (T eq T_inv) then
+                Include(~List_of_automorphisms,T);
+            end if;
+        catch e1; 
+        end try;
+    end for;
+
+    Transf := AssociativeArray();
+    for i in [1..#List_of_automorphisms] do
+        T := Matrix(Rationals(),4,[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]);
+        f<x,y,z,t> := List_of_automorphisms[i](x);
+        T[1,1] := Evaluate(f,<1,0,0,0>);
+        T[2,1] := Evaluate(f,<0,1,0,0>);
+        T[3,1] := Evaluate(f,<0,0,1,0>);
+        T[4,1] := Evaluate(f,<0,0,0,1>);
+        f<x,y,z,t> := List_of_automorphisms[i](y);
+        T[1,2] := Evaluate(f,<1,0,0,0>);
+        T[2,2] := Evaluate(f,<0,1,0,0>);
+        T[3,2] := Evaluate(f,<0,0,1,0>);
+        T[4,2] := Evaluate(f,<0,0,0,1>);
+        f<x,y,z,t> := List_of_automorphisms[i](z);
+        T[1,3] := Evaluate(f,<1,0,0,0>);
+        T[2,3] := Evaluate(f,<0,1,0,0>);
+        T[3,3] := Evaluate(f,<0,0,1,0>);
+        T[4,3] := Evaluate(f,<0,0,0,1>);
+        f<x,y,z,t> := List_of_automorphisms[i](t);
+        T[1,4] := Evaluate(f,<1,0,0,0>);
+        T[2,4] := Evaluate(f,<0,1,0,0>);
+        T[3,4] := Evaluate(f,<0,0,1,0>);
+        T[4,4] := Evaluate(f,<0,0,0,1>);
+    Transf[i] := T;
+    end for;
+
+    for i in [1..#Transf] do
+        if Transf[i] eq Matrix(Rationals(),4,[1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]) and i gt 1 then
+            O := Transf[i];
+            Transf[i] := Transf[1];
+            Transf[1] := O;
+        end if;
+    end for;
+
+    Transf := [Transf[i] : i in [1..#Transf]];
+   
+    return(Transf);
+
+end function;
+
+
+
+/*
+Inputs: T - transformation matrix.
+Outputs: [D,E] - vector consisting of diagonal matrix, D, and eigenvector 
+matrix, E.
+Function: Diagonalization - this function diagonalizes a transformation matrix, 
+T, and returns a vector [D,E], where D is the corresponding diagonal matrix, 
+and E is the corresponding matrix of eigenvectors.
+*/
+
+Diagonalization := function(T);
+
+    D,E,rk := PrimaryRationalForm(T);
+
+    return([D,E]);
+end function;
+
+
+/*
+Inputs: T - transformation matrix.
+        f - equation of irreducible variety in four variables.
+Outputs: g - equation of irreducible variety in new coordinates in four 
+variables.
+Function: ChangeOfCoordinates - this function receives as input an irreducible
+variety, f, and transformation matrix, T. It finds the diagonal matrix, D, and 
+eigenvector matrix, E, corresponding to T, and creates a new set of variables,
+v1,v2,v3,v4, on which D acts my multiplication by a scalar. The output is an 
+irreducible variety, g, which is the evaluation of f at <v1,v2,v3,v4>.
+*/
+
+ChangeOfCoordinates := function(f,T)
+
+    D,E,rk := PrimaryRationalForm(T);
+      
+    P<x,y,z,t> := PolynomialRing(Rationals(),4);
+    bool003,inv := IsInvertible(E);
+    tr_inv := Transpose(inv);
+    v1 := tr_inv[1,1]*x+tr_inv[2,1]*y+tr_inv[3,1]*z+tr_inv[4,1]*t;
+    v2 := tr_inv[1,2]*x+tr_inv[2,2]*y+tr_inv[3,2]*z+tr_inv[4,2]*t;
+    v3 := tr_inv[1,3]*x+tr_inv[2,3]*y+tr_inv[3,3]*z+tr_inv[4,3]*t;
+    v4 := tr_inv[1,4]*x+tr_inv[2,4]*y+tr_inv[3,4]*z+tr_inv[4,4]*t;
+    g := Evaluate(f,<v1,v2,v3,v4>);
+    return(g);
+
+end function;
+
+/*
+Inputs: point1,...,point8 - vectors [x,y,z,t], of integers.
+Outputs: Transf - vector consisting of matrices.
+Function: TranslationOctic - this function takes as input a set of 8 points,
+which are converted to points in P:=ProjectiveSpace(Rationals(),3). 
+TranslationOfSimplex is used to find automorphisms of P that fixes this set 
+of 8 points. The vector, Transf, consisting of the corresponding transformation
+matrices is returned.
+*/
+
+
+TranslationOctic := function(point1,point2,point3,point4,point5,point6,point7,point8,f) 
+    
+    P<x,y,z,t> := ProjectiveSpace(Rationals(),3);
+    f<x,y,z,t> := Evaluate(f,<x,y,z,t>);
+    bool0,point0 := [1,1,1,1] in P;
+    bool1,point1 := point1 in P;
+    bool2,point2 := point2 in P;
+    bool3,point3 := point3 in P;
+    bool4,point4 := point4 in P;
+    bool5,point5 := point5 in P;
+    bool6,point6 := point6 in P;
+    bool7,point7 := point7 in P;
+    bool8,point8 := point8 in P;
+    All_points := [point0,point1,point2,point3,point4,point5,point6,point7,point8];
+    True_points := [point1,point2,point3,point4,point5,point6,point7,point8];
+
+
+    check := [0,0,0,0,0,0,0,0];
+    List_of_automorphisms := [];
+
+    for p1,p2,p3,p4,p5 in All_points do
+        try 
+            p := [p1,p2,p3,p4,p5];
+            T := TranslationOfSimplex(P,p);
+            bool,T_inv := IsInvertible(T);           
+            for i in [1..8] do
+                if (T(True_points[i]) in True_points) and (Evaluate(f,<x,y,z,t>) eq Evaluate(f,<T(x),T(y),T(z),T(t)>)) then
+                    check[i] := 1;
+                end if;
+            end for;
+            if check eq [1,1,1,1,1,1,1,1] and T eq T_inv then
+                Include(~List_of_automorphisms, T);
+            end if;
+            check := [0,0,0,0,0,0,0,0];
+        catch e1;
+        end try;
+    end for;
+
+
+    Transf := AssociativeArray();
+    for i in [1..#List_of_automorphisms] do
+        T := Matrix(Rationals(),4,[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]);
+        f<x,y,z,t> := List_of_automorphisms[i](x);
+        T[1,1] := Evaluate(f,<1,0,0,0>);
+        T[2,1] := Evaluate(f,<0,1,0,0>);
+        T[3,1] := Evaluate(f,<0,0,1,0>);
+        T[4,1] := Evaluate(f,<0,0,0,1>);
+        f<x,y,z,t> := List_of_automorphisms[i](y);
+        T[1,2] := Evaluate(f,<1,0,0,0>);
+        T[2,2] := Evaluate(f,<0,1,0,0>);
+        T[3,2] := Evaluate(f,<0,0,1,0>);
+        T[4,2] := Evaluate(f,<0,0,0,1>);
+        f<x,y,z,t> := List_of_automorphisms[i](z);
+        T[1,3] := Evaluate(f,<1,0,0,0>);
+        T[2,3] := Evaluate(f,<0,1,0,0>);
+        T[3,3] := Evaluate(f,<0,0,1,0>);
+        T[4,3] := Evaluate(f,<0,0,0,1>);
+        f<x,y,z,t> := List_of_automorphisms[i](t);
+        T[1,4] := Evaluate(f,<1,0,0,0>);
+        T[2,4] := Evaluate(f,<0,1,0,0>);
+        T[3,4] := Evaluate(f,<0,0,1,0>);
+        T[4,4] := Evaluate(f,<0,0,0,1>);
+        Transf[i] := T;
+    end for;
+
+    for i in [1..#Transf] do
+        if Transf[i] eq Matrix(Rationals(),4,[1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]) and i gt 1 then
+            O := Transf[i];
+            Transf[i] := Transf[1];
+            Transf[1] := O;
+        end if;
+    end for;
+
+    Transf := [Transf[i] : i in [1..#Transf]];
+
+    return(Transf);
+
+end function;
+
+
+/*
+Inputs: T - transformation matrix.
+Outputs: [D,E] - vector consisting of diagonal matrix, D, and eigenvector 
+matrix, E.
+Function: Diagonalization - this function diagonalizes a transformation matrix, 
+T, and returns a vector [D,E], where D is the corresponding diagonal matrix, 
+and E is the corresponding matrix of eigenvectors.
+*/
+
+Diagonalization := function(T);
+
+    D,E,rk := PrimaryRationalForm(T);
+
+    return([D,E]);
+end function;
+
+
+/*
+Inputs: T - transformation matrix.
+        f - equation of irreducible variety in four variables.
+Outputs: g - equation of irreducible variety in new coordinates in four 
+variables.
+Function: ChangeOfCoordinates - this function receives as input an irreducible
+variety, f, and transformation matrix, T. It finds the diagonal matrix, D, and 
+eigenvector matrix, E, corresponding to T, and creates a new set of variables,
+v1,v2,v3,v4, on which D acts my multiplication by a scalar. The output is an 
+irreducible variety, g, which is the evaluation of f at <v1,v2,v3,v4>.
+*/
+
+ChangeOfCoordinates := function(f,T)
+
+    D,E,rk := PrimaryRationalForm(T);
+      
+    P<x,y,z,t> := PolynomialRing(Rationals(),4);
+    bool003,inv := IsInvertible(E);
+    tr_inv := Transpose(inv);
+    v1 := tr_inv[1,1]*x+tr_inv[2,1]*y+tr_inv[3,1]*z+tr_inv[4,1]*t;
+    v2 := tr_inv[1,2]*x+tr_inv[2,2]*y+tr_inv[3,2]*z+tr_inv[4,2]*t;
+    v3 := tr_inv[1,3]*x+tr_inv[2,3]*y+tr_inv[3,3]*z+tr_inv[4,3]*t;
+    v4 := tr_inv[1,4]*x+tr_inv[2,4]*y+tr_inv[3,4]*z+tr_inv[4,4]*t;
+    g := Evaluate(f,<v1,v2,v3,v4>);
+    return(g);
+
+end function;
+
+
+/*
+Inputs: f - equation of irreducible variety.
+        D - diagonal matrix of order 2 whose eigenvectors are the variables 
+        that define f.
+        q - quadratic twist.
+        min_prime_index - prime number.
+        max_prime index - prime number.
+Outputs: sum - vector of pairs [s,p], where s is the number of points in 
+ProjectiveSpace(GF(p^2),[1,1,1,1,4]) of the quotient of f by the automorphism D
+(and which sends the last coordinate to its negative), where p is a prime between
+min_prime_index and max_prime_index; s=0 if and only if p divides q ("bad
+primes").
+Function: CountPoints2 - this function counts the number of points in 
+ProjectiveSpace(GF(p^2),[1,1,1,1,4]) on the quotient of f by the automorphism D 
+(and which sends the last coordinate to its negative), where p is a prime between 
+min_prime_index and max_prime_index; s=0 if and only if p divides q ("bad 
+primes").
+*/
+
+
+
+CountPoints2 := function(f,D,q,min_prime_index,max_prime_index)
+
+h := f;
+sum := [[0,NthPrime(i+1)] : i in [1..(max_prime_index-min_prime_index+1)]];
+
+for j in [min_prime_index..max_prime_index] do
+ 
+p := NthPrime(j+1);
+
+if IsCoercible(Integers(),q/p) then
+    sum[j][1]:=0;
+else
+    k:=GF(p^2);
+    g:=Generator(k);
+    Proj := ProjectiveSpace(GF(p^2),[1,1,1,1,4]);
+    P<x,y,z,t>:=PolynomialRing(GF(p),4);
+    if D[1,1] ne 1 and D[1,1] ne -1 then
+    	D := [D[1,1],0,0,0, 0,D[2,2]/D[1,1],0,0, 0,0,D[3,3]/D[1,1],0, 0,0,0,D[4,4]/D[1,1]];
+    end if;
+
+    tr,f := IsCoercible(P,h);
+
+    
+    if D eq Matrix(Rationals(),4,[1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]) or D eq Matrix(Rationals(),4,[-1,0,0,0, 0,-1,0,0, 0,0,-1,0, 0,0,0,-1]) then
+
+	Seq01 := {{[1,y1,z1,t1,w],[1,y1,z1,t1,-w]}: y1,z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<1,y1,z1,t1>)};
+	Seq01:=IndexedSet(Seq01);
+	Seq11 := {};
+	Seq11 := SetToIndexedSet(Seq11);
+	for i in [1..#Seq01] do
+	    conversion:=SetToIndexedSet(Seq01[i]);
+ 	   if #conversion eq 1 then
+ 	       bool1,p1 := conversion[1] in Proj;
+	        Include(~Seq11,{p1});
+ 	   elif #conversion eq 2 then
+  	      bool1,p1 := conversion[1] in Proj;
+ 	       bool2,p2 := conversion[2] in Proj;
+  	      Include(~Seq11,{p1,p2});
+ 	   end if;
+	end for; 
+
+	Seq02 := {{[0,1,z1,t1,w],[0,1,z1,t1,-w]}: z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,1,z1,t1>)};
+	Seq02:=IndexedSet(Seq02);
+	Seq12 := {};
+	Seq12 := SetToIndexedSet(Seq12);
+	for i in [1..#Seq02] do
+ 	   conversion:=SetToIndexedSet(Seq02[i]);
+ 	   if #conversion eq 1 then
+ 	       bool1,p1 := conversion[1] in Proj;
+ 	       Include(~Seq12,{p1});
+ 	   elif #conversion eq 2 then
+   	     bool1,p1 := conversion[1] in Proj;
+   	     bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq12,{p1,p2});
+  	  end if;
+	end for; 
+
+
+	Seq03 := {{[0,0,1,t1,w],[0,0,1,t1,-w]}: t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,0,1,t1>)};
+	Seq03:=IndexedSet(Seq03);
+	Seq13 := {};
+	Seq13 := SetToIndexedSet(Seq13);
+	for i in [1..#Seq03] do
+ 	   conversion:=SetToIndexedSet(Seq03[i]);
+ 	   if #conversion eq 1 then
+ 	       bool1,p1 := conversion[1] in Proj;
+ 	       Include(~Seq13,{p1});
+ 	   elif #conversion eq 2 then
+   	     bool1,p1 := conversion[1] in Proj;
+ 	       bool2,p2 := conversion[2] in Proj;
+ 	       Include(~Seq13,{p1,p2});
+	    end if;
+	end for; 
+
+
+	Seq04 := {{[0,0,0,1,w],[0,0,0,1,-w]}: w in GF(p)|q*w^2 eq Evaluate(f,<0,0,0,1>)};
+	Seq04:=IndexedSet(Seq04);
+	Seq14 := {};
+	Seq14 := SetToIndexedSet(Seq14);
+	for i in [1..#Seq04] do
+	    conversion:=SetToIndexedSet(Seq04[i]);
+ 	   if #conversion eq 1 then
+ 	       bool1,p1 := conversion[1] in Proj;
+ 	       Include(~Seq14,{p1});
+ 	   elif #conversion eq 2 then
+ 	       bool1,p1 := conversion[1] in Proj;
+	        bool2,p2 := conversion[2] in Proj;
+	        Include(~Seq14,{p1,p2});
+	    end if;
+	end for; 
+
+
+
+	SquareRoots := {SquareRoot(w1) : w1 in GF(p^2)|w1 ne 0 and w1 in GF(p) and IsSquare(w1) eq true and SquareRoot(w1) notin GF(p)};
+	sqrt := Representative(SquareRoots);
+	times_SquareRoots := {a*sqrt : a in GF(p)};
+
+	Seq05 := {{[1,y1,z1,t1,tsqrt],[1,y1,z1,t1,-tsqrt]}: y1,z1,t1 in GF(p),tsqrt in times_SquareRoots|tsqrt ne 0 and q*(tsqrt)^2 eq Evaluate(f,<1,y1,z1,t1>)};
+	Seq05:=IndexedSet(Seq05);
+	Seq15 := {};
+	Seq15 := SetToIndexedSet(Seq15);
+	for i in [1..#Seq05] do
+ 	   conversion:=SetToIndexedSet(Seq05[i]);
+  	  if #conversion eq 1 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq15,{p1});
+   	 elif #conversion eq 2 then
+  	      bool1,p1 := conversion[1] in Proj;
+    	    bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq15,{p1,p2});
+   	 end if;
+	end for; 
+	
+	Seq06 := {{[0,1,z1,t1,tsqrt],[0,1,z1,t1,-tsqrt]}: z1,t1 in GF(p),tsqrt in times_SquareRoots|tsqrt ne 0 and q*(tsqrt)^2 eq Evaluate(f,<0,1,z1,t1>)};
+	Seq06:=IndexedSet(Seq06);
+	Seq16 := {};
+	Seq16 := SetToIndexedSet(Seq16);
+	for i in [1..#Seq06] do
+ 	   conversion:=SetToIndexedSet(Seq06[i]);
+  	  if #conversion eq 1 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq16,{p1});
+   	 elif #conversion eq 2 then
+  	      bool1,p1 := conversion[1] in Proj;
+    	    bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq16,{p1,p2});
+   	 end if;
+	end for; 
+
+	Seq07 := {{[0,0,1,t1,tsqrt],[0,0,1,t1,-tsqrt]}: t1 in GF(p),tsqrt in times_SquareRoots|tsqrt ne 0 and q*(tsqrt)^2 eq Evaluate(f,<0,0,1,t1>)};
+	Seq07:=IndexedSet(Seq07);
+	Seq17 := {};
+	Seq17 := SetToIndexedSet(Seq17);
+	for i in [1..#Seq07] do
+ 	   conversion:=SetToIndexedSet(Seq07[i]);
+  	  if #conversion eq 1 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq17,{p1});
+   	 elif #conversion eq 2 then
+  	      bool1,p1 := conversion[1] in Proj;
+    	    bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq17,{p1,p2});
+   	 end if;
+	end for; 
+
+	Seq08 := {{[0,0,0,1,tsqrt],[0,0,0,1,-tsqrt]}: tsqrt in times_SquareRoots|tsqrt ne 0 and q*(tsqrt)^2 eq Evaluate(f,<0,0,0,1>)};
+	Seq08:=IndexedSet(Seq08);
+	Seq18 := {};
+	Seq18 := SetToIndexedSet(Seq18);
+	for i in [1..#Seq08] do
+ 	   conversion:=SetToIndexedSet(Seq08[i]);
+  	  if #conversion eq 1 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq18,{p1});
+   	 elif #conversion eq 2 then
+  	      bool1,p1 := conversion[1] in Proj;
+    	    bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq18,{p1,p2});
+   	 end if;
+	end for; 
+
+
+	Seq21 := IndexedSetToSet(Seq11);
+	Seq22 := IndexedSetToSet(Seq12);
+	Seq23 := IndexedSetToSet(Seq13);
+	Seq24 := IndexedSetToSet(Seq14);
+	Seq25 := IndexedSetToSet(Seq15);
+	Seq26 := IndexedSetToSet(Seq16);
+	Seq27 := IndexedSetToSet(Seq17);
+	Seq28 := IndexedSetToSet(Seq18);
+
+
+	for x in Seq25 do
+   	    if x in Seq21 then
+       	        Exclude(~Seq25,x);
+   	    elif x in Seq22 then
+  	        Exclude(~Seq25,x);
+   	    elif x in Seq23 then
+    	      Exclude(~Seq25,x);
+  	    elif x in Seq24 then
+    	      Exclude(~Seq25,x);
+   	    end if;
+	end for;
+	for x in Seq26 do
+   	    if x in Seq21 then
+       	        Exclude(~Seq26,x);
+   	    elif x in Seq22 then
+  	        Exclude(~Seq26,x);
+   	    elif x in Seq23 then
+    	      Exclude(~Seq26,x);
+  	    elif x in Seq24 then
+    	      Exclude(~Seq26,x);
+   	    end if;
+	end for;
+	for x in Seq27 do
+   	    if x in Seq21 then
+       	        Exclude(~Seq27,x);
+   	    elif x in Seq22 then
+  	        Exclude(~Seq27,x);
+   	    elif x in Seq23 then
+    	      Exclude(~Seq27,x);
+  	    elif x in Seq24 then
+    	      Exclude(~Seq27,x);
+   	    end if;
+	end for;
+	for x in Seq28 do
+   	    if x in Seq21 then
+       	        Exclude(~Seq28,x);
+   	    elif x in Seq22 then
+  	        Exclude(~Seq28,x);
+   	    elif x in Seq23 then
+    	      Exclude(~Seq28,x);
+  	    elif x in Seq24 then
+    	      Exclude(~Seq28,x);
+   	    end if;
+	end for;
+
+
+
+    sum[j][1] :=  #Seq21+#Seq22+#Seq23+#Seq24+#Seq25+#Seq26+#Seq27+#Seq28;
+
+
+
+
+    elif D eq Matrix(Rationals(),4,[1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,-1]) or D eq Matrix(Rationals(),4,[-1,0,0,0, 0,-1,0,0, 0,0,-1,0, 0,0,0,1]) then
+    
+        Seq01 := {{[1,y1,z1,t1,w],[1,y1,z1,-t1,-w]}: y1,z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<1,y1,z1,t1>)};
+	Seq01:=IndexedSet(Seq01);
+	Seq11 := {};
+	Seq11 := SetToIndexedSet(Seq11);
+	for i in [1..#Seq01] do
+  	  conversion:=SetToIndexedSet(Seq01[i]);
+ 	   if #conversion eq 1 then
+ 	       bool1,p1 := conversion[1] in Proj;
+ 	       Include(~Seq11,{p1});
+ 	   elif #conversion eq 2 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq11,{p1,p2});
+  	  end if;
+	end for; 
+
+	Seq02 := {{[0,1,z1,t1,w],[0,1,z1,-t1,-w]}: z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,1,z1,t1>)};
+	Seq02:=IndexedSet(Seq02);
+	Seq12 := {};
+	Seq12 := SetToIndexedSet(Seq12);
+	for i in [1..#Seq02] do
+  	  conversion:=SetToIndexedSet(Seq02[i]);
+  	  if #conversion eq 1 then
+   	     bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq12,{p1});
+ 	   elif #conversion eq 2 then
+   	     bool1,p1 := conversion[1] in Proj;
+   	     bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq12,{p1,p2});
+ 	   end if;
+	end for; 
+
+	Seq03 := {{[0,0,1,t1,w],[0,0,1,-t1,-w]}: t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,0,1,t1>)};
+	Seq03:=IndexedSet(Seq03);
+	Seq13 := {};
+	Seq13 := SetToIndexedSet(Seq13);
+	for i in [1..#Seq03] do
+   	 conversion:=SetToIndexedSet(Seq03[i]);
+   	 if #conversion eq 1 then
+     	   bool1,p1 := conversion[1] in Proj;
+     	   Include(~Seq13,{p1});
+  	  elif #conversion eq 2 then
+   	     bool1,p1 := conversion[1] in Proj;
+  	      bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq13,{p1,p2});
+  	  end if;
+	end for; 
+
+	Seq04 := {{[0,0,0,1,w],[0,0,0,-1,-w]}: w in GF(p)|q*w^2 eq Evaluate(f,<0,0,0,1>)};
+	Seq04:=IndexedSet(Seq04);
+	Seq14 := {};
+	Seq14 := SetToIndexedSet(Seq14);
+	for i in [1..#Seq04] do
+ 	   conversion:=SetToIndexedSet(Seq04[i]);
+ 	   if #conversion eq 1 then
+ 	       bool1,p1 := conversion[1] in Proj;
+ 	       Include(~Seq14,{p1});
+ 	   elif #conversion eq 2 then
+    	    bool1,p1 := conversion[1] in Proj;
+   	     bool2,p2 := conversion[2] in Proj;
+ 	       Include(~Seq14,{p1,p2});
+ 	   end if;
+	end for; 
+
+
+	SquareRoots := {SquareRoot(w1) : w1 in GF(p^2)|w1 ne 0 and w1 in GF(p) and IsSquare(w1) eq true and SquareRoot(w1) notin GF(p)};
+	sqrt := Representative(SquareRoots);
+	times_SquareRoots := {a*sqrt : a in GF(p)};
+
+	Seq05 := {{[x1,y1,z1,1,w1],[-x1,-y1,-z1,1,-w1]}: x1,y1,z1,w1 in times_SquareRoots|(x1 notin GF(p) or y1 notin GF(p) or z1 notin GF(p) or w1 notin GF(p)) and q*(w1)^2 eq Evaluate(f,<x1,y1,z1,g^0>)};
+	Seq05:=IndexedSet(Seq05);
+	Seq15 := {};
+	Seq15 := SetToIndexedSet(Seq15);
+	for i in [1..#Seq05] do
+ 	   conversion:=SetToIndexedSet(Seq05[i]);
+  	  if #conversion eq 1 then
+	        bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq15,{p1});
+	    elif #conversion eq 2 then
+	        bool1,p1 := conversion[1] in Proj;
+	        bool2,p2 := conversion[2] in Proj;
+ 	       Include(~Seq15,{p1,p2});
+  	  end if;
+	end for; 
+
+	Seq06 := {{[x1,y1,z1,0,tsqrt],[x1,y1,z1,0,-tsqrt]}: x1,y1,z1 in GF(p),tsqrt in times_SquareRoots|tsqrt ne 0 and q*(tsqrt)^2 eq Evaluate(f,<x1,y1,z1,0>)};
+	Seq06:=IndexedSet(Seq06);
+	Seq16 := {};
+	Seq16 := SetToIndexedSet(Seq16);
+	for i in [1..#Seq06] do
+  	  conversion:=SetToIndexedSet(Seq06[i]);
+  	  if #conversion eq 1 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq16,{p1});
+  	  elif #conversion eq 2 then
+   	     bool1,p1 := conversion[1] in Proj;
+   	     bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq16,{p1,p2});
+   	 end if;
+	end for; 
+
+
+
+	Seq21 := IndexedSetToSet(Seq11);
+	Seq22 := IndexedSetToSet(Seq12);
+	Seq23 := IndexedSetToSet(Seq13);
+	Seq24 := IndexedSetToSet(Seq14);
+	Seq25 := IndexedSetToSet(Seq15);
+	Seq26 := IndexedSetToSet(Seq16);
+
+
+	for x in Seq25 do
+ 	   if x in Seq21 then
+       		 Exclude(~Seq25,x);
+   	   elif x in Seq22 then
+   	     	 Exclude(~Seq25,x);
+   	   elif x in Seq23 then
+   	         Exclude(~Seq25,x);
+   	   elif x in Seq24 then
+   	   	 Exclude(~Seq25,x);
+   	   end if;
+	end for;
+	for x in Seq26 do
+ 	   if x in Seq21 then
+  	      Exclude(~Seq26,x);
+   	   elif x in Seq22 then
+   	      Exclude(~Seq26,x);
+   	   elif x in Seq23 then
+      	      Exclude(~Seq26,x);
+   	   elif x in Seq24 then
+    	      Exclude(~Seq26,x);
+   	   end if;
+	end for;
+
+    sum[j][1] :=  #Seq21+#Seq22+#Seq23+#Seq24+#Seq25+#Seq26;
+
+
+
+    elif D eq Matrix(Rationals(),4,[1,0,0,0, 0,1,0,0, 0,0,-1,0, 0,0,0,1]) or D eq Matrix(Rationals(),4,[-1,0,0,0, 0,-1,0,0, 0,0,1,0, 0,0,0,-1]) then
+    
+         Seq01 := {{[1,y1,z1,t1,w],[1,y1,-z1,t1,-w]}: y1,z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<1,y1,z1,t1>)};
+	Seq01:=IndexedSet(Seq01);
+	Seq11 := {};
+	Seq11 := SetToIndexedSet(Seq11);
+	for i in [1..#Seq01] do
+  	  conversion:=SetToIndexedSet(Seq01[i]);
+ 	   if #conversion eq 1 then
+ 	       bool1,p1 := conversion[1] in Proj;
+ 	       Include(~Seq11,{p1});
+ 	   elif #conversion eq 2 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq11,{p1,p2});
+  	  end if;
+	end for; 
+
+	Seq02 := {{[0,1,z1,t1,w],[0,1,-z1,t1,-w]}: z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,1,z1,t1>)};
+	Seq02:=IndexedSet(Seq02);
+	Seq12 := {};
+	Seq12 := SetToIndexedSet(Seq12);
+	for i in [1..#Seq02] do
+  	  conversion:=SetToIndexedSet(Seq02[i]);
+  	  if #conversion eq 1 then
+   	     bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq12,{p1});
+ 	   elif #conversion eq 2 then
+   	     bool1,p1 := conversion[1] in Proj;
+   	     bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq12,{p1,p2});
+ 	   end if;
+	end for; 
+
+
+	Seq03 := {{[0,0,1,t1,w],[0,0,-1,t1,-w]}: t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,0,1,t1>)};
+	Seq03:=IndexedSet(Seq03);
+	Seq13 := {};
+	Seq13 := SetToIndexedSet(Seq13);
+	for i in [1..#Seq03] do
+   	 conversion:=SetToIndexedSet(Seq03[i]);
+   	 if #conversion eq 1 then
+     	   bool1,p1 := conversion[1] in Proj;
+     	   Include(~Seq13,{p1});
+  	  elif #conversion eq 2 then
+   	     bool1,p1 := conversion[1] in Proj;
+  	      bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq13,{p1,p2});
+  	  end if;
+	end for; 
+
+	Seq04 := {{[0,0,0,1,w],[0,0,0,1,-w]}: w in GF(p)|q*w^2 eq Evaluate(f,<0,0,0,1>)};
+	Seq04:=IndexedSet(Seq04);
+	Seq14 := {};
+	Seq14 := SetToIndexedSet(Seq14);
+	for i in [1..#Seq04] do
+ 	   conversion:=SetToIndexedSet(Seq04[i]);
+ 	   if #conversion eq 1 then
+ 	       bool1,p1 := conversion[1] in Proj;
+ 	       Include(~Seq14,{p1});
+ 	   elif #conversion eq 2 then
+    	    bool1,p1 := conversion[1] in Proj;
+   	     bool2,p2 := conversion[2] in Proj;
+ 	       Include(~Seq14,{p1,p2});
+ 	   end if;
+	end for; 
+
+
+	SquareRoots := {SquareRoot(w1) : w1 in GF(p^2)|w1 ne 0 and w1 in GF(p) and IsSquare(w1) eq true and SquareRoot(w1) notin GF(p)};
+	sqrt := Representative(SquareRoots);
+	times_SquareRoots := {a*sqrt : a in GF(p)};
+
+	Seq05 := {{[x1,y1,1,t1,w1],[-x1,-y1,1,-t1,-w1]}: x1,y1,t1,w1 in times_SquareRoots|(x1 notin GF(p) or y1 notin GF(p) or t1 notin GF(p) or w1 notin GF(p)) and q*(w1)^2 eq Evaluate(f,<x1,y1,g^0,t1>)};
+	Seq05:=IndexedSet(Seq05);
+	Seq15 := {};
+	Seq15 := SetToIndexedSet(Seq15);
+	for i in [1..#Seq05] do
+ 	   conversion:=SetToIndexedSet(Seq05[i]);
+  	  if #conversion eq 1 then
+	        bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq15,{p1});
+	    elif #conversion eq 2 then
+	        bool1,p1 := conversion[1] in Proj;
+	        bool2,p2 := conversion[2] in Proj;
+ 	       Include(~Seq15,{p1,p2});
+  	  end if;
+	end for; 
+
+	Seq06 := {{[x1,y1,0,t1,tsqrt],[x1,y1,0,t1,-tsqrt]}: x1,y1,t1 in GF(p),tsqrt in times_SquareRoots|tsqrt ne 0 and q*(tsqrt)^2 eq Evaluate(f,<x1,y1,0,t1>)};
+	Seq06:=IndexedSet(Seq06);
+	Seq16 := {};
+	Seq16 := SetToIndexedSet(Seq16);
+	for i in [1..#Seq06] do
+  	  conversion:=SetToIndexedSet(Seq06[i]);
+  	  if #conversion eq 1 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq16,{p1});
+  	  elif #conversion eq 2 then
+   	     bool1,p1 := conversion[1] in Proj;
+   	     bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq16,{p1,p2});
+   	 end if;
+	end for; 
+
+
+
+	Seq21 := IndexedSetToSet(Seq11);
+	Seq22 := IndexedSetToSet(Seq12);
+	Seq23 := IndexedSetToSet(Seq13);
+	Seq24 := IndexedSetToSet(Seq14);
+	Seq25 := IndexedSetToSet(Seq15);
+	Seq26 := IndexedSetToSet(Seq16);
+
+
+	for x in Seq25 do
+ 	   if x in Seq21 then
+       		 Exclude(~Seq25,x);
+   	   elif x in Seq22 then
+   	     	 Exclude(~Seq25,x);
+   	   elif x in Seq23 then
+   	         Exclude(~Seq25,x);
+   	   elif x in Seq24 then
+   	   	 Exclude(~Seq25,x);
+   	   end if;
+	end for;
+	for x in Seq26 do
+ 	   if x in Seq21 then
+  	      Exclude(~Seq26,x);
+   	   elif x in Seq22 then
+   	      Exclude(~Seq26,x);
+   	   elif x in Seq23 then
+      	      Exclude(~Seq26,x);
+   	   elif x in Seq24 then
+    	      Exclude(~Seq26,x);
+   	   end if;
+	end for;
+
+    sum[j][1] :=  #Seq21+#Seq22+#Seq23+#Seq24+#Seq25+#Seq26;
+
+
+
+
+    elif D eq Matrix(Rationals(),4,[1,0,0,0, 0,-1,0,0, 0,0,1,0, 0,0,0,1]) or D eq Matrix(Rationals(),4,[-1,0,0,0, 0,1,0,0, 0,0,-1,0, 0,0,0,-1]) then
+    
+        Seq01 := {{[1,y1,z1,t1,w],[1,-y1,z1,t1,-w]}: y1,z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<1,y1,z1,t1>)};
+	Seq01:=IndexedSet(Seq01);
+	Seq11 := {};
+	Seq11 := SetToIndexedSet(Seq11);
+	for i in [1..#Seq01] do
+  	  conversion:=SetToIndexedSet(Seq01[i]);
+ 	   if #conversion eq 1 then
+ 	       bool1,p1 := conversion[1] in Proj;
+ 	       Include(~Seq11,{p1});
+ 	   elif #conversion eq 2 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq11,{p1,p2});
+  	  end if;
+	end for; 
+
+	Seq02 := {{[0,1,z1,t1,w],[0,-1,z1,t1,-w]}: z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,1,z1,t1>)};
+	Seq02:=IndexedSet(Seq02);
+	Seq12 := {};
+	Seq12 := SetToIndexedSet(Seq12);
+	for i in [1..#Seq02] do
+  	  conversion:=SetToIndexedSet(Seq02[i]);
+  	  if #conversion eq 1 then
+   	     bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq12,{p1});
+ 	   elif #conversion eq 2 then
+   	     bool1,p1 := conversion[1] in Proj;
+   	     bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq12,{p1,p2});
+ 	   end if;
+	end for; 
+
+	Seq03 := {{[0,0,1,t1,w],[0,0,1,t1,-w]}: t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,0,1,t1>)};
+	Seq03:=IndexedSet(Seq03);
+	Seq13 := {};
+	Seq13 := SetToIndexedSet(Seq13);
+	for i in [1..#Seq03] do
+   	 conversion:=SetToIndexedSet(Seq03[i]);
+   	 if #conversion eq 1 then
+     	   bool1,p1 := conversion[1] in Proj;
+     	   Include(~Seq13,{p1});
+  	  elif #conversion eq 2 then
+   	     bool1,p1 := conversion[1] in Proj;
+  	      bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq13,{p1,p2});
+  	  end if;
+	end for; 
+
+	Seq04 := {{[0,0,0,1,w],[0,0,0,1,-w]}: w in GF(p)|q*w^2 eq Evaluate(f,<0,0,0,1>)};
+	Seq04:=IndexedSet(Seq04);
+	Seq14 := {};
+	Seq14 := SetToIndexedSet(Seq14);
+	for i in [1..#Seq04] do
+ 	   conversion:=SetToIndexedSet(Seq04[i]);
+ 	   if #conversion eq 1 then
+ 	       bool1,p1 := conversion[1] in Proj;
+ 	       Include(~Seq14,{p1});
+ 	   elif #conversion eq 2 then
+    	    bool1,p1 := conversion[1] in Proj;
+   	     bool2,p2 := conversion[2] in Proj;
+ 	       Include(~Seq14,{p1,p2});
+ 	   end if;
+	end for; 
+
+
+	SquareRoots := {SquareRoot(w1) : w1 in GF(p^2)|w1 ne 0 and w1 in GF(p) and IsSquare(w1) eq true and SquareRoot(w1) notin GF(p)};
+	sqrt := Representative(SquareRoots);
+	times_SquareRoots := {a*sqrt : a in GF(p)};
+
+	Seq05 := {{[x1,1,z1,t1,w1],[-x1,1,-z1,-t1,-w1]}: x1,z1,t1,w1 in times_SquareRoots|(x1 notin GF(p) or z1 notin GF(p) or t1 notin GF(p) or w1 notin GF(p)) and q*(w1)^2 eq Evaluate(f,<x1,g^0,z1,t1>)};
+	Seq05:=IndexedSet(Seq05);
+	Seq15 := {};
+	Seq15 := SetToIndexedSet(Seq15);
+	for i in [1..#Seq05] do
+ 	   conversion:=SetToIndexedSet(Seq05[i]);
+  	  if #conversion eq 1 then
+	        bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq15,{p1});
+	    elif #conversion eq 2 then
+	        bool1,p1 := conversion[1] in Proj;
+	        bool2,p2 := conversion[2] in Proj;
+ 	       Include(~Seq15,{p1,p2});
+  	  end if;
+	end for; 
+
+	Seq06 := {{[x1,0,z1,t1,tsqrt],[x1,0,z1,t1,-tsqrt]}: x1,z1,t1 in GF(p),tsqrt in times_SquareRoots|tsqrt ne 0 and q*(tsqrt)^2 eq Evaluate(f,<x1,0,z1,t1>)};
+	Seq06:=IndexedSet(Seq06);
+	Seq16 := {};
+	Seq16 := SetToIndexedSet(Seq16);
+	for i in [1..#Seq06] do
+  	  conversion:=SetToIndexedSet(Seq06[i]);
+  	  if #conversion eq 1 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq16,{p1});
+  	  elif #conversion eq 2 then
+   	     bool1,p1 := conversion[1] in Proj;
+   	     bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq16,{p1,p2});
+   	 end if;
+	end for; 
+
+
+
+	Seq21 := IndexedSetToSet(Seq11);
+	Seq22 := IndexedSetToSet(Seq12);
+	Seq23 := IndexedSetToSet(Seq13);
+	Seq24 := IndexedSetToSet(Seq14);
+	Seq25 := IndexedSetToSet(Seq15);
+	Seq26 := IndexedSetToSet(Seq16);
+
+
+	for x in Seq25 do
+ 	   if x in Seq21 then
+       		 Exclude(~Seq25,x);
+   	   elif x in Seq22 then
+   	     	 Exclude(~Seq25,x);
+   	   elif x in Seq23 then
+   	         Exclude(~Seq25,x);
+   	   elif x in Seq24 then
+   	   	 Exclude(~Seq25,x);
+   	   end if;
+	end for;
+	for x in Seq26 do
+ 	   if x in Seq21 then
+  	      Exclude(~Seq26,x);
+   	   elif x in Seq22 then
+   	      Exclude(~Seq26,x);
+   	   elif x in Seq23 then
+      	      Exclude(~Seq26,x);
+   	   elif x in Seq24 then
+    	      Exclude(~Seq26,x);
+   	   end if;
+	end for;
+
+    sum[j][1] :=  #Seq21+#Seq22+#Seq23+#Seq24+#Seq25+#Seq26;
+
+
+
+
+
+
+
+
+
+
+
+    elif D eq Matrix(Rationals(),4,[-1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]) or D eq Matrix(Rationals(),4,[1,0,0,0, 0,-1,0,0, 0,0,-1,0, 0,0,0,-1]) then
+    
+        Seq01 := {{[1,y1,z1,t1,w],[-1,y1,z1,t1,-w]}: y1,z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<1,y1,z1,t1>)};
+	Seq01:=IndexedSet(Seq01);
+	Seq11 := {};
+	Seq11 := SetToIndexedSet(Seq11);
+	for i in [1..#Seq01] do
+  	  conversion:=SetToIndexedSet(Seq01[i]);
+ 	   if #conversion eq 1 then
+ 	       bool1,p1 := conversion[1] in Proj;
+ 	       Include(~Seq11,{p1});
+ 	   elif #conversion eq 2 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq11,{p1,p2});
+  	  end if;
+	end for; 
+
+	Seq02 := {{[0,1,z1,t1,w],[0,1,z1,t1,-w]}: z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,1,z1,t1>)};
+	Seq02:=IndexedSet(Seq02);
+	Seq12 := {};
+	Seq12 := SetToIndexedSet(Seq12);
+	for i in [1..#Seq02] do
+  	  conversion:=SetToIndexedSet(Seq02[i]);
+  	  if #conversion eq 1 then
+   	     bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq12,{p1});
+ 	   elif #conversion eq 2 then
+   	     bool1,p1 := conversion[1] in Proj;
+   	     bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq12,{p1,p2});
+ 	   end if;
+	end for; 
+
+	Seq03 := {{[0,0,1,t1,w],[0,0,1,t1,-w]}: t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,0,1,t1>)};
+	Seq03:=IndexedSet(Seq03);
+	Seq13 := {};
+	Seq13 := SetToIndexedSet(Seq13);
+	for i in [1..#Seq03] do
+   	 conversion:=SetToIndexedSet(Seq03[i]);
+   	 if #conversion eq 1 then
+     	   bool1,p1 := conversion[1] in Proj;
+     	   Include(~Seq13,{p1});
+  	  elif #conversion eq 2 then
+   	     bool1,p1 := conversion[1] in Proj;
+  	      bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq13,{p1,p2});
+  	  end if;
+	end for; 
+
+	Seq04 := {{[0,0,0,1,w],[0,0,0,1,-w]}: w in GF(p)|q*w^2 eq Evaluate(f,<0,0,0,1>)};
+	Seq04:=IndexedSet(Seq04);
+	Seq14 := {};
+	Seq14 := SetToIndexedSet(Seq14);
+	for i in [1..#Seq04] do
+ 	   conversion:=SetToIndexedSet(Seq04[i]);
+ 	   if #conversion eq 1 then
+ 	       bool1,p1 := conversion[1] in Proj;
+ 	       Include(~Seq14,{p1});
+ 	   elif #conversion eq 2 then
+    	    bool1,p1 := conversion[1] in Proj;
+   	     bool2,p2 := conversion[2] in Proj;
+ 	       Include(~Seq14,{p1,p2});
+ 	   end if;
+	end for; 
+
+
+	SquareRoots := {SquareRoot(w1) : w1 in GF(p^2)|w1 ne 0 and w1 in GF(p) and IsSquare(w1) eq true and SquareRoot(w1) notin GF(p)};
+	sqrt := Representative(SquareRoots);
+	times_SquareRoots := {a*sqrt : a in GF(p)};
+
+	Seq05 := {{[1,y1,z1,t1,w1],[1,-y1,-z1,-t1,-w1]}: y1,z1,t1,w1 in times_SquareRoots|(y1 notin GF(p) or z1 notin GF(p) or t1 notin GF(p) or w1 notin GF(p)) and q*(w1)^2 eq Evaluate(f,<g^0,y1,z1,t1>)};
+	Seq05:=IndexedSet(Seq05);
+	Seq15 := {};
+	Seq15 := SetToIndexedSet(Seq15);
+	for i in [1..#Seq05] do
+ 	   conversion:=SetToIndexedSet(Seq05[i]);
+  	  if #conversion eq 1 then
+	        bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq15,{p1});
+	    elif #conversion eq 2 then
+	        bool1,p1 := conversion[1] in Proj;
+	        bool2,p2 := conversion[2] in Proj;
+ 	       Include(~Seq15,{p1,p2});
+  	  end if;
+	end for; 
+
+	Seq06 := {{[0,y1,z1,t1,tsqrt],[0,y1,z1,t1,-tsqrt]}: y1,z1,t1 in GF(p),tsqrt in times_SquareRoots|tsqrt ne 0 and q*(tsqrt)^2 eq Evaluate(f,<0,y1,z1,t1>)};
+	Seq06:=IndexedSet(Seq06);
+	Seq16 := {};
+	Seq16 := SetToIndexedSet(Seq16);
+	for i in [1..#Seq06] do
+  	  conversion:=SetToIndexedSet(Seq06[i]);
+  	  if #conversion eq 1 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq16,{p1});
+  	  elif #conversion eq 2 then
+   	     bool1,p1 := conversion[1] in Proj;
+   	     bool2,p2 := conversion[2] in Proj;
+   	     Include(~Seq16,{p1,p2});
+   	 end if;
+	end for; 
+
+
+
+	Seq21 := IndexedSetToSet(Seq11);
+	Seq22 := IndexedSetToSet(Seq12);
+	Seq23 := IndexedSetToSet(Seq13);
+	Seq24 := IndexedSetToSet(Seq14);
+	Seq25 := IndexedSetToSet(Seq15);
+	Seq26 := IndexedSetToSet(Seq16);
+
+
+	for x in Seq25 do
+ 	   if x in Seq21 then
+       		 Exclude(~Seq25,x);
+   	   elif x in Seq22 then
+   	     	 Exclude(~Seq25,x);
+   	   elif x in Seq23 then
+   	         Exclude(~Seq25,x);
+   	   elif x in Seq24 then
+   	   	 Exclude(~Seq25,x);
+   	   end if;
+	end for;
+	for x in Seq26 do
+ 	   if x in Seq21 then
+  	      Exclude(~Seq26,x);
+   	   elif x in Seq22 then
+   	      Exclude(~Seq26,x);
+   	   elif x in Seq23 then
+      	      Exclude(~Seq26,x);
+   	   elif x in Seq24 then
+    	      Exclude(~Seq26,x);
+   	   end if;
+	end for;
+
+    sum[j][1] :=  #Seq21+#Seq22+#Seq23+#Seq24+#Seq25+#Seq26;
+
+
+
+    elif D eq Matrix(Rationals(),4,[1,0,0,0, 0,1,0,0, 0,0,-1,0, 0,0,0,-1]) or D eq Matrix(Rationals(),4,[-1,0,0,0, 0,-1,0,0, 0,0,1,0, 0,0,0,1]) then
+
+    	Seq01 := {{[1,y1,z1,t1,w],[1,y1,-z1,-t1,-w]}: y1,z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<1,y1,z1,t1>)};
+	Seq01:=IndexedSet(Seq01);
+	Seq11 := {};
+	Seq11 := SetToIndexedSet(Seq11);
+	for i in [1..#Seq01] do
+  	  conversion:=SetToIndexedSet(Seq01[i]);
+    	if #conversion eq 1 then
+     	   bool1,p1 := conversion[1] in Proj;
+       	   Include(~Seq11,{p1});
+   	elif #conversion eq 2 then
+           bool1,p1 := conversion[1] in Proj;
+           bool2,p2 := conversion[2] in Proj;
+           Include(~Seq11,{p1,p2});
+    	end if;
+	end for; 
+
+
+	Seq02 := {{[0,1,z1,t1,w],[0,1,-z1,-t1,-w]}: z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,1,z1,t1>)};
+	Seq02:=IndexedSet(Seq02);
+	Seq12 := {};
+	Seq12 := SetToIndexedSet(Seq12);
+	for i in [1..#Seq02] do
+    	    conversion:=SetToIndexedSet(Seq02[i]);
+    	if #conversion eq 1 then
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Seq12,{p1});
+   	elif #conversion eq 2 then
+            bool1,p1 := conversion[1] in Proj;
+            bool2,p2 := conversion[2] in Proj;
+            Include(~Seq12,{p1,p2});
+    	end if;
+	end for; 
+
+	Seq03 := {{[0,0,1,t1,w],[0,0,-1,-t1,-w]}: t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,0,1,t1>)};
+	Seq03:=IndexedSet(Seq03);
+	Seq13 := {};
+	Seq13 := SetToIndexedSet(Seq13);
+	for i in [1..#Seq03] do
+   	    conversion:=SetToIndexedSet(Seq03[i]);
+    	if #conversion eq 1 then
+   	    bool1,p1 := conversion[1] in Proj;
+            Include(~Seq13,{p1});
+    	elif #conversion eq 2 then
+            bool1,p1 := conversion[1] in Proj;
+            bool2,p2 := conversion[2] in Proj;
+            Include(~Seq13,{p1,p2});
+   	 end if;
+	end for; 
+
+	Seq04 := {{[0,0,0,1,w],[0,0,0,-1,-w]}: w in GF(p)|q*w^2 eq Evaluate(f,<0,0,0,1>)};
+	Seq04:=IndexedSet(Seq04);
+	Seq14 := {};
+	Seq14 := SetToIndexedSet(Seq14);
+	for i in [1..#Seq04] do
+  	  conversion:=SetToIndexedSet(Seq04[i]);
+   	if #conversion eq 1 then
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Seq14,{p1});
+        elif #conversion eq 2 then
+            bool1,p1 := conversion[1] in Proj;
+            bool2,p2 := conversion[2] in Proj;
+            Include(~Seq14,{p1,p2});
+        end if;
+	end for; 
+
+
+	SquareRoots := {SquareRoot(w1) : w1 in GF(p^2)|w1 ne 0 and w1 in GF(p) and IsSquare(w1) eq true and SquareRoot(w1) notin GF(p)};
+	sqrt := Representative(SquareRoots);
+	times_SquareRoots := {a*sqrt : a in GF(p)};
+
+	Seq05 := {{[x1,y1,z1,1,w1],[-x1,-y1,z1,1,-w1]}: x1,y1,w1 in times_SquareRoots, z1 in GF(p)|(x1 notin GF(p) or y1 notin GF(p) or w1 notin GF(p)) and q*(w1)^2 eq Evaluate(f,<x1,y1,z1,g^0>)};
+	Seq05:=IndexedSet(Seq05);
+	Seq15 := {};
+	Seq15 := SetToIndexedSet(Seq15);
+	for i in [1..#Seq05] do
+ 	   conversion:=SetToIndexedSet(Seq05[i]);
+        if #conversion eq 1 then
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Seq15,{p1});
+        elif #conversion eq 2 then
+            bool1,p1 := conversion[1] in Proj;
+            bool2,p2 := conversion[2] in Proj;
+            Include(~Seq15,{p1,p2});
+        end if;
+  	end for; 
+
+	Seq06 := {{[x1,y1,1,0,w1],[-x1,-y1,1,0,-w1]}: x1,y1,w1 in times_SquareRoots|(x1 notin GF(p) or y1 notin GF(p) or w1 notin GF(p)) and q*(w1)^2 eq Evaluate(f,<x1,y1,g^0,0>)};
+	Seq06:=IndexedSet(Seq06);
+	Seq16 := {};
+	Seq16 := SetToIndexedSet(Seq16);
+	for i in [1..#Seq06] do
+ 	   conversion:=SetToIndexedSet(Seq06[i]);
+    	if #conversion eq 1 then
+     	   bool1,p1 := conversion[1] in Proj;
+     	   Include(~Seq16,{p1});
+    	elif #conversion eq 2 then
+    	    bool1,p1 := conversion[1] in Proj;
+    	    bool2,p2 := conversion[2] in Proj;
+    	    Include(~Seq16,{p1,p2});
+   	end if;
+	end for; 
+
+	Seq07 := {{[x1,y1,0,0,tsqrt],[x1,y1,0,0,-tsqrt]}: x1,y1 in GF(p), tsqrt in times_SquareRoots|tsqrt ne 0 and q*(tsqrt)^2 eq Evaluate(f,<x1,y1,0,0>)};
+	Seq07:=IndexedSet(Seq07);
+	Seq17 := {};
+	Seq17 := SetToIndexedSet(Seq17);
+	for i in [1..#Seq07] do
+	    conversion:=SetToIndexedSet(Seq07[i]);
+  	  if #conversion eq 1 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq17,{p1});
+  	  elif #conversion eq 2 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      bool2,p2 := conversion[2] in Proj;
+       	      Include(~Seq17,{p1,p2});
+    	  end if;
+	end for; 
+
+
+	Seq21 := IndexedSetToSet(Seq11);
+	Seq22 := IndexedSetToSet(Seq12);
+	Seq23 := IndexedSetToSet(Seq13);
+	Seq24 := IndexedSetToSet(Seq14);
+	Seq25 := IndexedSetToSet(Seq15);
+	Seq26 := IndexedSetToSet(Seq16);
+	Seq27 := IndexedSetToSet(Seq17);
+
+
+	for x in Seq25 do
+  	  if x in Seq21 then
+    	     Exclude(~Seq25,x);
+    	  elif x in Seq22 then
+   	     Exclude(~Seq25,x);
+  	  elif x in Seq23 then
+   	     Exclude(~Seq25,x);
+   	  elif x in Seq24 then
+   	     Exclude(~Seq25,x);
+   	  end if;
+	end for;
+	for x in Seq26 do
+ 	   if x in Seq21 then
+   	     Exclude(~Seq26,x);
+  	   elif x in Seq22 then
+  	      Exclude(~Seq26,x);
+  	   elif x in Seq23 then
+   	     Exclude(~Seq26,x);
+   	   elif x in Seq24 then
+    	    Exclude(~Seq26,x);
+   	   end if;
+	end for;
+	for x in Seq27 do
+    	   if x in Seq21 then
+    	    Exclude(~Seq27,x);
+   	   elif x in Seq22 then
+   	     Exclude(~Seq27,x);
+    	   elif x in Seq23 then
+             Exclude(~Seq27,x);
+  	   elif x in Seq24 then
+  	      Exclude(~Seq27,x);
+    	   end if;
+    end for;
+
+    sum[j][1] :=  #Seq21+#Seq22+#Seq23+#Seq24+#Seq25+#Seq26+#Seq27;
+
+
+
+
+    elif D eq Matrix(Rationals(),4,[1,0,0,0, 0,-1,0,0, 0,0,1,0, 0,0,0,-1]) or D eq Matrix(Rationals(),4,[-1,0,0,0, 0,1,0,0, 0,0,-1,0, 0,0,0,1]) then
+
+    Seq01 := {{[1,y1,z1,t1,w],[1,-y1,z1,-t1,-w]}: y1,z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<1,y1,z1,t1>)};
+	Seq01:=IndexedSet(Seq01);
+	Seq11 := {};
+	Seq11 := SetToIndexedSet(Seq11);
+	for i in [1..#Seq01] do
+  	  conversion:=SetToIndexedSet(Seq01[i]);
+    	if #conversion eq 1 then
+     	   bool1,p1 := conversion[1] in Proj;
+       	   Include(~Seq11,{p1});
+   	elif #conversion eq 2 then
+           bool1,p1 := conversion[1] in Proj;
+           bool2,p2 := conversion[2] in Proj;
+           Include(~Seq11,{p1,p2});
+    	end if;
+	end for; 
+
+
+	Seq02 := {{[0,1,z1,t1,w],[0,-1,z1,-t1,-w]}: z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,1,z1,t1>)};
+	Seq02:=IndexedSet(Seq02);
+	Seq12 := {};
+	Seq12 := SetToIndexedSet(Seq12);
+	for i in [1..#Seq02] do
+    	    conversion:=SetToIndexedSet(Seq02[i]);
+    	if #conversion eq 1 then
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Seq12,{p1});
+   	elif #conversion eq 2 then
+            bool1,p1 := conversion[1] in Proj;
+            bool2,p2 := conversion[2] in Proj;
+            Include(~Seq12,{p1,p2});
+    	end if;
+	end for; 
+
+	Seq03 := {{[0,0,1,t1,w],[0,0,1,-t1,-w]}: t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,0,1,t1>)};
+	Seq03:=IndexedSet(Seq03);
+	Seq13 := {};
+	Seq13 := SetToIndexedSet(Seq13);
+	for i in [1..#Seq03] do
+   	    conversion:=SetToIndexedSet(Seq03[i]);
+    	if #conversion eq 1 then
+   	    bool1,p1 := conversion[1] in Proj;
+            Include(~Seq13,{p1});
+    	elif #conversion eq 2 then
+            bool1,p1 := conversion[1] in Proj;
+            bool2,p2 := conversion[2] in Proj;
+            Include(~Seq13,{p1,p2});
+   	 end if;
+	end for; 
+
+	Seq04 := {{[0,0,0,1,w],[0,0,0,-1,-w]}: w in GF(p)|q*w^2 eq Evaluate(f,<0,0,0,1>)};
+	Seq04:=IndexedSet(Seq04);
+	Seq14 := {};
+	Seq14 := SetToIndexedSet(Seq14);
+	for i in [1..#Seq04] do
+  	  conversion:=SetToIndexedSet(Seq04[i]);
+   	if #conversion eq 1 then
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Seq14,{p1});
+        elif #conversion eq 2 then
+            bool1,p1 := conversion[1] in Proj;
+            bool2,p2 := conversion[2] in Proj;
+            Include(~Seq14,{p1,p2});
+        end if;
+	end for; 
+
+
+	SquareRoots := {SquareRoot(w1) : w1 in GF(p^2)|w1 ne 0 and w1 in GF(p) and IsSquare(w1) eq true and SquareRoot(w1) notin GF(p)};
+	sqrt := Representative(SquareRoots);
+	times_SquareRoots := {a*sqrt : a in GF(p)};
+
+	Seq05 := {{[x1,y1,z1,1,w1],[-x1,y1,-z1,1,-w1]}: x1,z1,w1 in times_SquareRoots, y1 in GF(p)|(x1 notin GF(p) or z1 notin GF(p) or w1 notin GF(p)) and q*(w1)^2 eq Evaluate(f,<x1,y1,z1,g^0>)};
+	Seq05:=IndexedSet(Seq05);
+	Seq15 := {};
+	Seq15 := SetToIndexedSet(Seq15);
+	for i in [1..#Seq05] do
+ 	   conversion:=SetToIndexedSet(Seq05[i]);
+        if #conversion eq 1 then
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Seq15,{p1});
+        elif #conversion eq 2 then
+            bool1,p1 := conversion[1] in Proj;
+            bool2,p2 := conversion[2] in Proj;
+            Include(~Seq15,{p1,p2});
+        end if;
+  	end for; 
+
+	Seq06 := {{[x1,1,z1,0,w1],[-x1,1,-z1,0,-w1]}: x1,z1,w1 in times_SquareRoots|(x1 notin GF(p) or z1 notin GF(p) or w1 notin GF(p)) and q*(w1)^2 eq Evaluate(f,<x1,g^0,z1,0>)};
+	Seq06:=IndexedSet(Seq06);
+	Seq16 := {};
+	Seq16 := SetToIndexedSet(Seq16);
+	for i in [1..#Seq06] do
+ 	   conversion:=SetToIndexedSet(Seq06[i]);
+    	if #conversion eq 1 then
+     	   bool1,p1 := conversion[1] in Proj;
+     	   Include(~Seq16,{p1});
+    	elif #conversion eq 2 then
+    	    bool1,p1 := conversion[1] in Proj;
+    	    bool2,p2 := conversion[2] in Proj;
+    	    Include(~Seq16,{p1,p2});
+   	end if;
+	end for; 
+
+	Seq07 := {{[x1,0,z1,0,tsqrt],[x1,0,z1,0,-tsqrt]}: x1,z1 in GF(p), tsqrt in times_SquareRoots|tsqrt ne 0 and q*(tsqrt)^2 eq Evaluate(f,<x1,0,z1,0>)};
+	Seq07:=IndexedSet(Seq07);
+	Seq17 := {};
+	Seq17 := SetToIndexedSet(Seq17);
+	for i in [1..#Seq07] do
+	    conversion:=SetToIndexedSet(Seq07[i]);
+  	  if #conversion eq 1 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq17,{p1});
+  	  elif #conversion eq 2 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      bool2,p2 := conversion[2] in Proj;
+       	      Include(~Seq17,{p1,p2});
+    	  end if;
+	end for; 
+
+
+	Seq21 := IndexedSetToSet(Seq11);
+	Seq22 := IndexedSetToSet(Seq12);
+	Seq23 := IndexedSetToSet(Seq13);
+	Seq24 := IndexedSetToSet(Seq14);
+	Seq25 := IndexedSetToSet(Seq15);
+	Seq26 := IndexedSetToSet(Seq16);
+	Seq27 := IndexedSetToSet(Seq17);
+
+
+	for x in Seq25 do
+  	  if x in Seq21 then
+    	     Exclude(~Seq25,x);
+    	  elif x in Seq22 then
+   	     Exclude(~Seq25,x);
+  	  elif x in Seq23 then
+   	     Exclude(~Seq25,x);
+   	  elif x in Seq24 then
+   	     Exclude(~Seq25,x);
+   	  end if;
+	end for;
+	for x in Seq26 do
+ 	   if x in Seq21 then
+   	     Exclude(~Seq26,x);
+  	   elif x in Seq22 then
+  	      Exclude(~Seq26,x);
+  	   elif x in Seq23 then
+   	     Exclude(~Seq26,x);
+   	   elif x in Seq24 then
+    	    Exclude(~Seq26,x);
+   	   end if;
+	end for;
+	for x in Seq27 do
+    	   if x in Seq21 then
+    	    Exclude(~Seq27,x);
+   	   elif x in Seq22 then
+   	     Exclude(~Seq27,x);
+    	   elif x in Seq23 then
+             Exclude(~Seq27,x);
+  	   elif x in Seq24 then
+  	      Exclude(~Seq27,x);
+    	   end if;
+    end for;
+
+    sum[j][1] :=  #Seq21+#Seq22+#Seq23+#Seq24+#Seq25+#Seq26+#Seq27;
+
+
+
+
+    elif D eq Matrix(Rationals(),4,[-1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,-1]) or D eq Matrix(Rationals(),4,[1,0,0,0, 0,-1,0,0, 0,0,-1,0, 0,0,0,1]) then
+
+    Seq01 := {{[1,y1,z1,t1,w],[-1,y1,z1,-t1,-w]}: y1,z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<1,y1,z1,t1>)};
+	Seq01:=IndexedSet(Seq01);
+	Seq11 := {};
+	Seq11 := SetToIndexedSet(Seq11);
+	for i in [1..#Seq01] do
+  	  conversion:=SetToIndexedSet(Seq01[i]);
+    	if #conversion eq 1 then
+     	   bool1,p1 := conversion[1] in Proj;
+       	   Include(~Seq11,{p1});
+   	elif #conversion eq 2 then
+           bool1,p1 := conversion[1] in Proj;
+           bool2,p2 := conversion[2] in Proj;
+           Include(~Seq11,{p1,p2});
+    	end if;
+	end for; 
+
+
+	Seq02 := {{[0,1,z1,t1,w],[0,1,z1,-t1,-w]}: z1,t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,1,z1,t1>)};
+	Seq02:=IndexedSet(Seq02);
+	Seq12 := {};
+	Seq12 := SetToIndexedSet(Seq12);
+	for i in [1..#Seq02] do
+    	    conversion:=SetToIndexedSet(Seq02[i]);
+    	if #conversion eq 1 then
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Seq12,{p1});
+   	elif #conversion eq 2 then
+            bool1,p1 := conversion[1] in Proj;
+            bool2,p2 := conversion[2] in Proj;
+            Include(~Seq12,{p1,p2});
+    	end if;
+	end for; 
+
+	Seq03 := {{[0,0,1,t1,w],[0,0,1,-t1,-w]}: t1,w in GF(p)|q*w^2 eq Evaluate(f,<0,0,1,t1>)};
+	Seq03:=IndexedSet(Seq03);
+	Seq13 := {};
+	Seq13 := SetToIndexedSet(Seq13);
+	for i in [1..#Seq03] do
+   	    conversion:=SetToIndexedSet(Seq03[i]);
+    	if #conversion eq 1 then
+   	    bool1,p1 := conversion[1] in Proj;
+            Include(~Seq13,{p1});
+    	elif #conversion eq 2 then
+            bool1,p1 := conversion[1] in Proj;
+            bool2,p2 := conversion[2] in Proj;
+            Include(~Seq13,{p1,p2});
+   	 end if;
+	end for; 
+
+	Seq04 := {{[0,0,0,1,w],[0,0,0,-1,-w]}: w in GF(p)|q*w^2 eq Evaluate(f,<0,0,0,1>)};
+	Seq04:=IndexedSet(Seq04);
+	Seq14 := {};
+	Seq14 := SetToIndexedSet(Seq14);
+	for i in [1..#Seq04] do
+  	  conversion:=SetToIndexedSet(Seq04[i]);
+   	if #conversion eq 1 then
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Seq14,{p1});
+        elif #conversion eq 2 then
+            bool1,p1 := conversion[1] in Proj;
+            bool2,p2 := conversion[2] in Proj;
+            Include(~Seq14,{p1,p2});
+        end if;
+	end for; 
+
+
+	SquareRoots := {SquareRoot(w1) : w1 in GF(p^2)|w1 ne 0 and w1 in GF(p) and IsSquare(w1) eq true and SquareRoot(w1) notin GF(p)};
+	sqrt := Representative(SquareRoots);
+	times_SquareRoots := {a*sqrt : a in GF(p)};
+
+	Seq05 := {{[x1,y1,z1,1,w1],[x1,-y1,-z1,1,-w1]}: y1,z1,w1 in times_SquareRoots, x1 in GF(p)|(y1 notin GF(p) or z1 notin GF(p) or w1 notin GF(p)) and q*(w1)^2 eq Evaluate(f,<x1,y1,z1,g^0>)};
+	Seq05:=IndexedSet(Seq05);
+	Seq15 := {};
+	Seq15 := SetToIndexedSet(Seq15);
+	for i in [1..#Seq05] do
+ 	   conversion:=SetToIndexedSet(Seq05[i]);
+        if #conversion eq 1 then
+            bool1,p1 := conversion[1] in Proj;
+            Include(~Seq15,{p1});
+        elif #conversion eq 2 then
+            bool1,p1 := conversion[1] in Proj;
+            bool2,p2 := conversion[2] in Proj;
+            Include(~Seq15,{p1,p2});
+        end if;
+  	end for; 
+
+	Seq06 := {{[1,y1,z1,0,w1],[1,-y1,-z1,0,-w1]}: y1,z1,w1 in times_SquareRoots|(y1 notin GF(p) or z1 notin GF(p) or w1 notin GF(p)) and q*(w1)^2 eq Evaluate(f,<g^0,y1,z1,0>)};
+	Seq06:=IndexedSet(Seq06);
+	Seq16 := {};
+	Seq16 := SetToIndexedSet(Seq16);
+	for i in [1..#Seq06] do
+ 	   conversion:=SetToIndexedSet(Seq06[i]);
+    	if #conversion eq 1 then
+     	   bool1,p1 := conversion[1] in Proj;
+     	   Include(~Seq16,{p1});
+    	elif #conversion eq 2 then
+    	    bool1,p1 := conversion[1] in Proj;
+    	    bool2,p2 := conversion[2] in Proj;
+    	    Include(~Seq16,{p1,p2});
+   	end if;
+	end for; 
+
+	Seq07 := {{[0,y1,z1,0,tsqrt],[0,y1,z1,0,-tsqrt]}: y1,z1 in GF(p), tsqrt in times_SquareRoots|tsqrt ne 0 and q*(tsqrt)^2 eq Evaluate(f,<0,y1,z1,0>)};
+	Seq07:=IndexedSet(Seq07);
+	Seq17 := {};
+	Seq17 := SetToIndexedSet(Seq17);
+	for i in [1..#Seq07] do
+	    conversion:=SetToIndexedSet(Seq07[i]);
+  	  if #conversion eq 1 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      Include(~Seq17,{p1});
+  	  elif #conversion eq 2 then
+  	      bool1,p1 := conversion[1] in Proj;
+  	      bool2,p2 := conversion[2] in Proj;
+       	      Include(~Seq17,{p1,p2});
+    	  end if;
+	end for; 
+
+
+	Seq21 := IndexedSetToSet(Seq11);
+	Seq22 := IndexedSetToSet(Seq12);
+	Seq23 := IndexedSetToSet(Seq13);
+	Seq24 := IndexedSetToSet(Seq14);
+	Seq25 := IndexedSetToSet(Seq15);
+	Seq26 := IndexedSetToSet(Seq16);
+	Seq27 := IndexedSetToSet(Seq17);
+
+
+	for x in Seq25 do
+  	  if x in Seq21 then
+    	     Exclude(~Seq25,x);
+    	  elif x in Seq22 then
+   	     Exclude(~Seq25,x);
+  	  elif x in Seq23 then
+   	     Exclude(~Seq25,x);
+   	  elif x in Seq24 then
+   	     Exclude(~Seq25,x);
+   	  end if;
+	end for;
+	for x in Seq26 do
+ 	   if x in Seq21 then
+   	     Exclude(~Seq26,x);
+  	   elif x in Seq22 then
+  	      Exclude(~Seq26,x);
+  	   elif x in Seq23 then
+   	     Exclude(~Seq26,x);
+   	   elif x in Seq24 then
+    	    Exclude(~Seq26,x);
+   	   end if;
+	end for;
+	for x in Seq27 do
+    	   if x in Seq21 then
+    	    Exclude(~Seq27,x);
+   	   elif x in Seq22 then
+   	     Exclude(~Seq27,x);
+    	   elif x in Seq23 then
+             Exclude(~Seq27,x);
+  	   elif x in Seq24 then
+  	      Exclude(~Seq27,x);
+    	   end if;
+    end for;
+
+    sum[j][1] :=  #Seq21+#Seq22+#Seq23+#Seq24+#Seq25+#Seq26+#Seq27;
+
+end if;
+end if;
+
+end for;
+
+return(sum);
+
+end function;
+
+
+
+
+/*
+Inputs: sum - vector of pairs [s,p], where s and p are integers.
+Outputs: sum - vector of pairs [s,p], where s and p are integers.
+Function: GoodPrimes - this function takes in a vector consisting of pairs of 
+integers, sum, and removes all pairs in sum whose first coordinate is 0. It
+then outputs the result.
+*/
+
+GoodPrimes := function(sum)
+    
+
+    for x in sum do
+        if x[1] eq 0 then
+		Exclude(~sum,x);
+        end if;
+    end for;
+
+    return(sum);
+end function;
+
+
+/*
+Inputs: good_sum - vector of pairs [s,p], where s and p are integers.
+        search_min - positive integer.
+        search_max - positive integer.
+Outputs: weight_4_level - vector triple [x,y,z], where x,y,z are integers.
+Function: FindWeight4Form - this function takes as input good_sum, a vector 
+of pairs of integers, [s,p]. For each weight 4 newform of levels between 
+search_min to search_max, the function compares the p-th coefficient of the 
+newform to the integer s corresponding to p in a pair [s,p] for each pair in 
+good_sum, and stops if all pairs agree with the coefficients. It either returns
+[0,0,0] if no weight 4 newforms check out in the search, or [x,y,z], where 
+ModularForms(Gamma0(x),4)[y,z] is the newform corresponding to good_sum.
+*/
+
+FindWeight4Form := function(good_sum,search_min,search_max)
+
+X:=[0 : i in [1..#good_sum]];
+weight_4_level := [0,0,0];
+weight_4_coeff := [[0,good_sum[i][2]] : i in [1..#good_sum]];
+for C in [search_min..search_max] do
+    M:=ModularForms(Gamma0(C),4);
+    N:=NumberOfNewformClasses(M);
+        if (N gt 0) then
+                    for i in [1..N] do
+                        L:=#Newforms(M)[i];
+                            for k in [1..L] do
+                                for j in [1..#good_sum] do
+				    p := good_sum[j][2];
+                                    if( IsCoercible(Integers(),Coefficient(Newform(M,i,k),p)) ) then 
+                                        bool,x:=IsCoercible(Integers(),Coefficient(Newform(M,i,k),p));
+                                            if (((1-x) mod p) eq (good_sum[j][1] mod p)) then
+                                                weight_4_coeff[j] := [x,p];
+                                                X[j] := 1;
+                                            end if;
+                                    end if;
+                               end for;
+                            if X eq [1 : i in [1..#good_sum]] then   
+				ii := i; kk := k;
+                                break;
+                            else
+                                weight_4_coeff := [[0,good_sum[i][2]] : i in [1..#good_sum]];
+                                X := [0 : i in [1..#good_sum]];;
+                            end if;
+                        end for;
+                    if X eq [1 : i in [1..#good_sum]] then
+                       break;
+                    end if;    
+                  end for;
+              if X eq [1 : i in [1..#good_sum]] then
+                    weight_4_level := [C,ii,kk];
+                    break;
+              else
+                    weight_4_coeff := [[0,good_sum[i][2]] : i in [1..#good_sum]];
+                    X := [0 : i in [1..#good_sum]];
+              end if;
+        end if;
+end for;
+
+return(weight_4_level);
+
+
+end function;
+
+
+/*
+Inputs: counts - vector of pairs [s,p], where s and p are integers.
+        weight4level - a triple of integers [x,y,z], where 
+                        ModularForms(Gamma0(x),4)[y,z] is a weight 4 newform.
+Outputs: s - vector of real numbers.
+Function: FirstCoefficient - this functions approximates the first coefficient
+for each pair in counts, and stores each approximation as a coordinate in s. It 
+returns s.
+*/
+
+
+FirstCoefficient := function(counts,weight4level)
+
+    nf := Newforms(CuspForms(weight4level[1],4))[weight4level[2],weight4level[3]];
+    Z := Integers();
+    s := [<Z!((x[1]+Coefficient(nf,x[2])-x[2]^3-1)/x[2]),x[2]> : x in counts];
+    
+    return(s);
+
+end function;
+
+
+
+/*
+Inputs: counts - vector of pairs [s,p], where s and p are integers.
+        weight4level - a triple of integers [x,y,z], where 
+                        ModularForms(Gamma0(x),4)[y,z] is a weight 4 newform.
+        first_coeff - integer.
+Outputs: <C,A> - vector, where C=[c1,c2,c3,c4,c5,c6] is the zero vector
+or the vector of coefficients in 
+[<c1+c2*LegendreSymbol(-1,x[2])+c3*LegendreSymbol(2,x[2])+c4*LegendreSymbol(-2,x[2])+c5*LegendreSymbol(3,x[2])+c6*LegendreSymbol(-3,x[2]),x[2]>],
+and A is a set of vectors of pairs <s,p>, where s and p are integers.
+Function: SecondCoefficient - this functions attempts to determine whether the 
+sets A (defined in the function) and C (also defined in the function) coincide.
+If not, C is the zero vector. It returns <C,A>.
+*/
+
+SecondCoefficient := function(counts,weight4level,first_coeff)
+
+    nf := Newforms(CuspForms(weight4level[1],4))[weight4level[2],weight4level[3]];
+    Z := Integers();
+    A := [<(x[1]+Coefficient(nf,x[2])-x[2]^3-first_coeff*(x[2]^2)-1)/x[2],x[2]> : x in counts | x[2] ne 3];
+    X :=0;
+    C := [0,0,0,0,0,0];
+    for a,b,c,d,e,f in [-3..3] do
+        X := [<a+b*LegendreSymbol(-1,x[2])+c*LegendreSymbol(2,x[2])+d*LegendreSymbol(-2,x[2])+e*LegendreSymbol(3,x[2])+f*LegendreSymbol(-3,x[2]),x[2]> : x in counts | x[2] ne 3];
+        if X eq A then
+            X := [<a+b*LegendreSymbol(-1,x[2])+c*LegendreSymbol(2,x[2])+d*LegendreSymbol(-2,x[2])+e*LegendreSymbol(3,x[2])+f*LegendreSymbol(-3,x[2]),x[2]> : x in counts | x[2] ne 3];
+            C := [a,b,c,d,e,f];
+            break;
+        end if;
+    end for;
+    
+    return(<C,A>);
+
+end function;
+
+
+
+/*MAIN*/
+/*****************************************************************************/
+/*Required input*/
+
+/*Transformation matrix, T (note that one can use TranslationOctic, TranslationSextic,
+or TranslationQuartic to automatically obtain some transformations through
+TranslationOfSimplex rather than inputting the transformation matrix manually):*/
+T := Matrix(Rationals(),4,[1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]);
+/*Polynomial ring, P:*/
+P<x,y,z,t> := PolynomialRing(Rationals(),4);
+/*Calabi-Yau threefold, f:*/
+Q<x,y,z,t> := x^2+y^2+z^2+t^2;
+S4<x,y,z,t> := x^4+y^4+z^4+t^4;
+f<x,y,z,t> := (y+z+t)*(x+z+t)*(x+y+t)*(x+y+z)*(3*Evaluate(S4,<x,y,z,t>)-(Evaluate(Q,<x,y,z,t>)^2));
+/*quadratic twist, q:*/
+q := 1;
+for T in Translation(f) do
+	/*prime range, min_prime and max_prime:*/
+	min_prime := 1;
+	max_prime := 8;
+	/*newform level range, min_weight4 and max_weight4:*/
+	min_weight4 := 96;
+	max_weight4 := 96;
+	print "Transformation matrix is:", T;
+	"";
+	Diag := Diagonalization(T);
+	print "Diagonal matrix is:", Diag[1];
+	"";
+	CoC := ChangeOfCoordinates(Q,T);
+	sum := CountPoints2(CoC,Diag[1],q,min_prime,max_prime);
+	print "Point counts are", sum;
+	"";
+	good_sum := GoodPrimes(sum);
+	print "Good point counts are", good_sum;
+	weight4level := FindWeight4Form(good_sum,min_weight4,max_weight4);
+	print "Level of weight 4 newform is", weight4level;
+	"";
+	if weight4level ne [0,0,0] then
+		first_coeff := FirstCoefficient(good_sum,weight4level);
+		print "First coefficient can be obtained from: ", first_coeff;
+		second := SecondCoefficient(good_sum,weight4level,1);
+		print "Second coefficient is ", second;
+	else
+		print "not modular";
+	end if;
+	print "";
+    	print "";
+    	print "---------------------------------------------------------";
+   	print "";
+   	print "";
+end for;
