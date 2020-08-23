@@ -1,0 +1,1 @@
+Here we take quotients of various Calabi-Yau elliptic surfaces in Meyer's book by various automorphism groups. We then try to determine the modularity of these quotients. 
