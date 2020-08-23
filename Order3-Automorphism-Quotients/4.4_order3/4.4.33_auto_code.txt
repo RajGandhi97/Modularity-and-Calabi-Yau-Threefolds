@@ -1,0 +1,38 @@
+Translation := function(Q) 
+    
+    P<x,y,z,t> := ProjectiveSpace(Rationals(),3);
+    Q<x,y,z,t> := Evaluate(Q,<x,y,z,t>);
+    bool0,point0 := [1,1,1,1] in P;
+    bool1,point1 := [1,0,0,0] in P;
+    bool2,point2 := [0,1,0,0] in P;
+    bool3,point3 := [0,0,1,0] in P;
+    bool4,point4 := [0,0,0,1] in P;
+    All_points := [point0,point1,point2,point3,point4];
+
+    List_of_automorphisms := [];
+
+    for p1,p2,p3,p4,p5 in All_points do
+        try
+            p := [p1,p2,p3,p4,p5];
+            T := TranslationOfSimplex(P,p);
+            bool,T_inv := IsInvertible(T);
+            if (Evaluate(Q,<x,y,z,t>) eq Evaluate(Q,<T(x),T(y),T(z),T(t)>)) and (T^2 eq T_inv) then
+                Include(~List_of_automorphisms,T);
+            end if;
+        catch e1; 
+        end try;
+    end for;
+
+    return(List_of_automorphisms);
+
+end function;
+
+P<x,y,z,t> := PolynomialRing(Rationals(),4);
+A := 0;
+B := 2;
+C := 1;
+D := 4;
+E := -10;
+F := 1;
+f<x,y,z,t> := x*y*z*t*(A*(x^2+y^2+z^2+t^2)+B*(x*y+z*t)+C*(x+y)*(z+t))*(D*(x^2+y^2+z^2+t^2)+E*(x*y+z*t)+F*(x+y)*(z+t));
+Translation(f);
