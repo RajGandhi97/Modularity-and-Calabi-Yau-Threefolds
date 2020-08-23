@@ -1,0 +1,1 @@
+Here we take quotients of various Calabi-Yau threefolds in Meyer's book by automorphism groups of order 2. We then try to determine the modularity of these quotients. 
