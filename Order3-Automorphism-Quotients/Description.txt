@@ -1,1 +1,3 @@
-Here we take quotients of various Calabi-Yau threefolds in Meyer's book by automorphism groups of order 3. We then try to determine the modularity of these quotients. 
+Here we take quotients of various Calabi-Yau threefolds in Meyer's book by automorphism groups of order 3. We then try to determine the modularity of these quotients. Twork in progress.
+
+There is one example in this folder - it can be modified to include all example. See the folder Elliptic-Surfaces for an example.
