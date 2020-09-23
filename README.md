@@ -5,7 +5,7 @@ All code was written in the Magma programming language.
 
 This project was co-supervised by Colin Ingalls and Adam Logan and supported by an Undergraduate Student Research Award from the Natural Sciences and Engineering Research Council. I would like to thank my supervisors for suggesting the methods used in this project and for their help with debugging. I would also like to John Voight for allowing me to use his server to run the Magma script. 
 
-We have found two new rigid realizations of weight 4 newforms that do not seem to be in the literature:
+We have found numerical evidence for two new rigid realizations of weight 4 newforms that do not seem to be in the literature:
 
 -The Calabi-Yau X_8 on page 112 of Meyer's book appears to be rigid with newform 54/2. 
 
